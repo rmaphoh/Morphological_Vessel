@@ -14,7 +14,8 @@ from eval import eval_net
 from model import UNet, Discriminator, Generator
 
 from torch.utils.tensorboard import SummaryWriter
-from dataset import BasicDataset
+#from dataset import BasicDataset
+from server_code.dataset import BasicDataset
 from torch.utils.data import DataLoader, random_split
 
 
@@ -52,7 +53,8 @@ def train_net(net_G,
     n_train = len(dataset) - n_val
     train, val = random_split(dataset, [n_train, n_val])
     train_loader = DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True, drop_last=True)
+    #val_loader = DataLoader(val, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True, drop_last=True)
+    val_loader = DataLoader(val, batch_size=1, shuffle=False, num_workers=2, pin_memory=True, drop_last=False)
 
     writer = SummaryWriter(comment=f'LR_{lr}_BS_{batch_size}')
     global_step = 0
@@ -72,8 +74,8 @@ def train_net(net_G,
     optimizer_D = optim.Adam(net_D.parameters(), lr=lr, betas=(0.5, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
     
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_G, 'min' if net_G.n_classes > 1 else 'max', factor=0.5, patience=150)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_D, 'min' if net_G.n_classes > 1 else 'max', factor=0.5, patience=150)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_G, 'min' if net_G.n_classes > 1 else 'max', factor=0.5, patience=50)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_D, 'min' if net_G.n_classes > 1 else 'max', factor=0.5, patience=50)
     
     if net_G.n_classes > 1:
         L_seg_CE = nn.CrossEntropyLoss()
@@ -112,53 +114,83 @@ def train_net(net_G,
                 fake_labels = torch.zeros(batch_size).to(device=device, dtype=torch.float32)
                 '''
                 #################### train D ##########################
+                optimizer_D.zero_grad()
 
-                real_predict = net_D(true_masks)
-                loss_adv_CE_real = L_adv_BCE(real_predict, real_labels)
+                real_patch = torch.cat([imgs, true_masks], dim=1)
+
+                real_predict_D = net_D(real_patch)
+                real_predict_D_sigmoid = torch.sigmoid(real_predict_D)
+                #real_predict = net_D(true_masks)
+
+                loss_adv_CE_real = L_adv_BCE(real_predict_D_sigmoid, real_labels)
+
+                loss_adv_CE_real.backward()
+
+                #########################
                 
-                masks_pred = net_G(imgs)
-                fake_predict = net_D(masks_pred)
-                loss_adv_CE_fake = L_adv_BCE(fake_predict, fake_labels)
+                masks_pred_D = net_G(imgs)
 
-                D_Loss = loss_adv_CE_real + loss_adv_CE_fake
+                masks_pred_D_sigmoid = torch.sigmoid(masks_pred_D)
 
+                fake_patch_D = torch.cat([imgs, masks_pred_D_sigmoid], dim=1)
+
+                fake_predict_D = net_D(fake_patch_D)
+                fake_predict_D_sigmoid = torch.sigmoid(fake_predict_D)
+                #fake_predict = net_D(masks_pred)
+
+                loss_adv_CE_fake = L_adv_BCE(fake_predict_D_sigmoid, fake_labels)
+
+                loss_adv_CE_fake.backward()
+
+                D_Loss = (loss_adv_CE_real + loss_adv_CE_fake)
+
+                
 
                 epoch_loss_D += D_Loss.item()
                 writer.add_scalar('Loss/D_train', D_Loss.item(), global_step)
                 pbar.set_postfix(**{'loss (batch)': D_Loss.item()})
 
-                optimizer_D.zero_grad()
-                D_Loss.backward()
-                nn.utils.clip_grad_value_(net_D.parameters(), 0.1)
+                #optimizer_D.zero_grad()
+                #D_Loss.backward()
+                #nn.utils.clip_grad_value_(net_D.parameters(), 0.1)
+                
                 optimizer_D.step()
-
                 
                 ################### train G ###########################
-                
-                masks_pred = net_G(imgs)
-                fake_predict = net_D(masks_pred)
-                loss_adv_G_fake = L_adv_BCE(fake_predict, real_labels)
+                optimizer_G.zero_grad()
 
-                masks_pred_sigmoid = torch.sigmoid(masks_pred)
-                loss_seg_CE = L_seg_CE(masks_pred, true_masks)
-                loss_seg_MSE = L_seg_MSE(masks_pred_sigmoid, true_masks)
+                masks_pred_G = net_G(imgs)
 
-                G_Loss = 0.08*loss_adv_G_fake + 1.3*loss_seg_CE + 0.7*loss_seg_MSE
+                masks_pred_G_sigmoid = torch.sigmoid(masks_pred_G)
+
+                fake_patch_G = torch.cat([imgs, masks_pred_G_sigmoid], dim=1)
+            
+                #fake_predict = net_D(masks_pred)
+                fake_predict_G = net_D(fake_patch_G)
+                fake_predict_G_sigmoid = torch.sigmoid(fake_predict_G)
+
+                loss_adv_G_fake = L_adv_BCE(fake_predict_G_sigmoid, real_labels)
+
+                #masks_pred_sigmoid = torch.sigmoid(masks_pred)
                 
-                '''
-                real_patch = torch.cat([imgs, true_masks], dim=1)
-                fake_patch = torch.cat([imgs, masks_pred], dim=1)
-                '''
+                loss_seg_CE = L_seg_CE(masks_pred_G, true_masks)
+                loss_seg_MSE = L_seg_MSE(masks_pred_G_sigmoid, true_masks)
+
+                G_Loss = 0.07*loss_adv_G_fake + 1.1*loss_seg_CE + 0.3*loss_seg_MSE
+                #G_Loss = 0.08*loss_adv_G_fake 
+                
 
                 epoch_loss_G += G_Loss.item()
                 writer.add_scalar('Loss/G_train', G_Loss.item(), global_step)
 
                 pbar.set_postfix(**{'loss (batch)': G_Loss.item()})
 
-                optimizer_G.zero_grad()
+                #optimizer_G.zero_grad()
                 G_Loss.backward()
-                nn.utils.clip_grad_value_(net_G.parameters(), 0.1)
+                #nn.utils.clip_grad_value_(net_G.parameters(), 0.1)
                 optimizer_G.step()
+
+                ##########################################################
 
                 pbar.update(imgs.shape[0])
                 global_step += 1
@@ -167,7 +199,7 @@ def train_net(net_G,
                         tag = tag.replace('.', '/')
                         writer.add_histogram('weights/' + tag, value.data.cpu().numpy(), global_step)
                         writer.add_histogram('grads/' + tag, value.grad.data.cpu().numpy(), global_step)
-                    val_score, sensitivity, specificity, precision, G, F1_score_2, auc_roc, auc_pr = eval_net(epoch, net_G, val_loader, device, mask=True)
+                    val_score, acc, sensitivity, specificity, precision, G, F1_score_2, auc_roc, auc_pr = eval_net(epoch, net_G, val_loader, device, mask=True)
                     scheduler.step(val_score)
                     writer.add_scalar('learning_rate', optimizer_G.param_groups[0]['lr'], global_step)
 
@@ -193,7 +225,7 @@ def train_net(net_G,
                     writer.add_scalar('Auc_pr/val_G', auc_pr, global_step)
 
                     if net_G.n_classes > 1:
-                        prediction_binary = (torch.sigmoid(masks_pred) > 0.5)
+                        prediction_binary = (torch.sigmoid(masks_pred_G) > 0.5)
                         prediction_binary_gpu = prediction_binary.to(device=device, dtype=mask_type)
                         # write accuracy
                         correct_train += prediction_binary_gpu.eq(true_masks.data).sum().item()
@@ -204,7 +236,7 @@ def train_net(net_G,
                         writer.add_scalar('Acc/test_G', train_accuracy, global_step)
                     else:
                         # G
-                        prediction_binary = (torch.sigmoid(masks_pred) > 0.5)
+                        prediction_binary = (torch.sigmoid(masks_pred_G) > 0.5)
                         prediction_binary_gpu = prediction_binary.to(device=device, dtype=mask_type)
                         # write accuracy
 
@@ -216,8 +248,14 @@ def train_net(net_G,
                         writer.add_scalar('Acc/val_G', train_accuracy, global_step)
 
                         # D
-                        prediction_binary_DR = real_predict.eq(real_labels.data).sum().item()
-                        prediction_binary_DF = fake_predict.eq(fake_labels.data).sum().item()
+                        real_predict_binary = (torch.sigmoid(real_predict_D) > 0.5)
+                        real_predict_binary_gpu = real_predict_binary.to(device=device, dtype=mask_type)
+
+                        fake_predict_binary = (torch.sigmoid(fake_predict_D) > 0.5)
+                        fake_predict_binary_gpu = fake_predict_binary.to(device=device, dtype=mask_type)
+
+                        prediction_binary_DR = real_predict_binary_gpu.eq(real_labels.data).sum().item()
+                        prediction_binary_DF = fake_predict_binary_gpu.eq(fake_labels.data).sum().item()
 
                         aver_prediction_binary_D = (prediction_binary_DR + prediction_binary_DF)/2
                         train_accuracy_D = 100 * aver_prediction_binary_D / total_train_pixel
@@ -237,7 +275,7 @@ def train_net(net_G,
                     writer.add_images('images', imgs, global_step)
                     if net_G.n_classes == 1:
                         writer.add_images('masks/true', true_masks, global_step)
-                        writer.add_images('masks/pred', torch.sigmoid(masks_pred) > 0.5, global_step)
+                        writer.add_images('masks/pred', torch.sigmoid(masks_pred_G) > 0.5, global_step)
 
                         
         
@@ -274,7 +312,7 @@ def get_args():
                         help='type of discriminator')
     parser.add_argument( '-d','--dataset', dest='dataset', type=str, 
                         help='dataset name')
-    parser.add_argument( '-v', '--validation', dest='val', type=float, default=10.0,
+    parser.add_argument( '-v', '--validation', dest='val', type=float, default=5.0,
                         help='Percent of the data that is used as validation (0-100)')
 
 
@@ -301,7 +339,7 @@ if __name__ == '__main__':
 
     net_G = Generator(input_channels=3, n_filters = 32, n_classes=1, bilinear=False)
 
-    net_D = Discriminator(input_channels=1, n_filters = 32, n_classes=1, bilinear=False)
+    net_D = Discriminator(input_channels=4, n_filters = 32, n_classes=1, bilinear=False)
 
 
 

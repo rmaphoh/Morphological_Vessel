@@ -28,12 +28,18 @@ val_transformer = transforms.Compose([
     #normalize
 ])
 
-
+'''
+mean=np.mean(fundus_imgs[index,...][fundus_imgs[index,...,0] > 40.0],axis=0)
+std=np.std(fundus_imgs[index,...][fundus_imgs[index,...,0] > 40.0],axis=0)
+assert len(mean)==3 and len(std)==3
+fundus_imgs[index,...]=(fundus_imgs[index,...]-mean)/std
+'''
 
 class BasicDataset(Dataset):
     def __init__(self, imgs_dir, masks_dir,  img_size, transforms = train_transformer, mask_suffix=''):
         self.imgs_dir = imgs_dir
         self.masks_dir = masks_dir
+        
         self.mask_suffix = mask_suffix
         self.img_size = img_size
         self.transform = transforms
@@ -85,7 +91,7 @@ class BasicDataset(Dataset):
         idx = self.ids[i]
         #mask_file = glob(self.masks_dir + idx + self.mask_suffix + '.*')
         mask_file = glob(self.masks_dir + idx  + '.*')
-        logging.info(f'Creating dataset with {len(mask_file)} mask')
+        #logging.info(f'Creating dataset with {len(mask_file)} mask')
     
         img_file = glob(self.imgs_dir + idx + '.*')
 
@@ -117,6 +123,8 @@ class BasicDataset(Dataset):
         img = self.preprocess(img, self.img_size)
         mask = self.preprocess(mask, self.img_size)
 
+        #print('the range of img is: ',np.unique(img))
+        #print('the range of mask is: ',np.unique(mask))
         '''
         if self.transform:
             img = self.transform(img)

@@ -7,8 +7,31 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve
 from skimage import filters
 import numpy as np
+from PIL import Image
 
-def pixel_values_in_mask(true_vessels, pred_vessels):
+
+def pad_imgs( imgs, img_size):
+    img_h,img_w=imgs.shape[0], imgs.shape[1]
+    target_h,target_w=img_size[0],img_size[1] 
+    if len(imgs.shape)==3:
+        d=imgs.shape[2]
+        padded=np.zeros((target_h, target_w,d))
+    elif len(imgs.shape)==2:
+        padded=np.zeros((target_h, target_w))
+    padded[(target_h-img_h)//2:(target_h-img_h)//2+img_h,(target_w-img_w)//2:(target_w-img_w)//2+img_w,...]=imgs
+    #print(np.shape(padded))
+    return padded
+
+
+
+def pixel_values_in_mask(true_vessels, pred_vessels, module_pad):
+
+
+    true_vessels = np.squeeze(true_vessels)
+    pred_vessels = np.squeeze(pred_vessels)
+    
+    true_vessels = (true_vessels[module_pad != 0])
+    pred_vessels = (pred_vessels[module_pad != 0])
 
     assert np.max(pred_vessels)<=1.0 and np.min(pred_vessels)>=0.0
     assert np.max(true_vessels)==1.0 and np.min(true_vessels)==0.0
@@ -105,6 +128,11 @@ def eval_net(epoch, net, loader, device, mask):
     mask_type = torch.float32 if net.n_classes == 1 else torch.long
     n_val = len(loader)  # the number of batch
     tot = 0
+    img_size = (592,592)
+    module = Image.open('./data/DRIVE_AV/test/mask/01_test_mask.gif')
+    module = np.asarray(module)/255
+
+    module_pad = pad_imgs(module, img_size).flatten()
 
     with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
         for batch in loader:
@@ -127,11 +155,12 @@ def eval_net(epoch, net, loader, device, mask):
                 mask_pred_sigmoid = torch.sigmoid(mask_pred)
                 mask_pred_sigmoid_cpu = mask_pred_sigmoid.detach().cpu().numpy().flatten()
                 true_masks_cpu = true_masks.detach().cpu().numpy().flatten()
-                vessels_in_mask, generated_in_mask = pixel_values_in_mask(true_masks_cpu, mask_pred_sigmoid_cpu )
+
+                vessels_in_mask, generated_in_mask = pixel_values_in_mask(true_masks_cpu, mask_pred_sigmoid_cpu, module_pad )
                 auc_roc=AUC_ROC(vessels_in_mask,generated_in_mask)
                 auc_pr=AUC_PR(vessels_in_mask, generated_in_mask)
                 
-                binarys_in_mask=threshold_by_otsu(mask_pred_sigmoid_cpu)
+                binarys_in_mask=threshold_by_otsu(generated_in_mask)
                 
                 ######################################## 
                 acc, sensitivity, specificity, precision, G, F1_score_2 = misc_measures(vessels_in_mask, binarys_in_mask)
@@ -146,5 +175,5 @@ def eval_net(epoch, net, loader, device, mask):
             pbar.update()
 
     net.train()
-    return tot / n_val,  sensitivity, specificity, precision, G, F1_score_2, auc_roc, auc_pr
+    return tot / n_val, acc,sensitivity, specificity, precision, G, F1_score_2, auc_roc, auc_pr
 

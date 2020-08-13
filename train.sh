@@ -9,5 +9,5 @@ source activate pytorch
 
 export PYTHONPATH=.:$PYTHONPATH
 
-python train.py --e=1500 --b=1 --learning-rate=2e-4 --v=10.0 --r=13 --dataset='DRIVE_AV' --discriminator='unet'
+python train.py --e=500 --b=2 --learning-rate=2e-4 --v=10.0 --r=13 --dataset='DRIVE_AV' --discriminator='unet'
 
