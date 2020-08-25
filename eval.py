@@ -72,18 +72,23 @@ def AUC_PR(true_vessel_img, pred_vessel_img):
 def misc_measures(true_vessel_arr, pred_vessel_arr):
     cm=confusion_matrix(true_vessel_arr, pred_vessel_arr)
     #print(np.shape(cm))
-    print('#################3')
-    print(len(np.shape(cm)))
+    # print('#################3')
+    # print(len(np.shape(cm)))
+    # print(np.shape(cm))
 
-    if len(np.shape(cm)) !=2:
+    # print(np.shape(cm)[0])
+
+    # if len(np.shape(cm)) !=2:
+    if np.shape(cm)[0] != 2 or np.shape(cm)[1] != 2:
         return 0,0,0,0,0,0
     else:
+        # print(np.shape(cm))
         acc=1.*(cm[0,0]+cm[1,1])/np.sum(cm)
-        sensitivity=1.*cm[1,1]/(cm[1,0]+cm[1,1])
-        specificity=1.*cm[0,0]/(cm[0,1]+cm[0,0])
-        precision=1.*cm[1,1]/(cm[1,1]+cm[0,1])
+        sensitivity=1.*cm[1,1]/(cm[1,0]+cm[1,1]+1e-8)
+        specificity=1.*cm[0,0]/(cm[0,1]+cm[0,0]+1e-8)
+        precision=1.*cm[1,1]/(cm[1,1]+cm[0,1]+1e-8)
         G = np.sqrt(sensitivity*specificity)
-        F1_score_2 = 2*precision*sensitivity/(precision+sensitivity)
+        F1_score_2 = 2*precision*sensitivity/(precision+sensitivity+1e-8)
         return acc, sensitivity, specificity, precision, G, F1_score_2
 
 def print_metrics(itr, **kargs):

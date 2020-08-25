@@ -19,9 +19,11 @@ if __name__ == '__main__':
                 class_no=3,
                 repeat=1,
                 train_batchsize=1,
-                num_epochs=1,
-                learning_rate=1e-3,
+                num_epochs=20,
+                learning_rate=1e-4,
                 image_size=(592, 592),
                 multi_task=True,
                 network='MTSARVSnet',
-                log_tag='Retinal_20200824')
+                log_tag='Retinal_20200824',
+                save_threshold_epoch=10,
+                save_interval_epoch=1)

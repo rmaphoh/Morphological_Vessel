@@ -2,6 +2,8 @@ import os
 import glob
 from os import listdir
 
+import logging
+
 from PIL import Image
 from os.path import splitext
 import sys
@@ -212,6 +214,8 @@ def trainModels(dataset_name,
                 learning_rate,
                 network,
                 log_tag,
+                save_threshold_epoch=400,
+                save_interval_epoch=10,
                 image_size=(592, 592),
                 multi_task=True):
     #
@@ -229,7 +233,8 @@ def trainModels(dataset_name,
                        '_train_batch_' + str(train_batchsize) + \
                        '_repeat_' + str(repeat_str) + \
                        '_lr_' + str(learning_rate) + \
-                       '_epoch_' + str(num_epochs) + dataset_name
+                       '_total_epoch_' + str(num_epochs) + \
+                       '_' + dataset_name
 
         # ====================================================================================================================================================================
         trainloader, validateloader = getData(data_directory, dataset_name, train_batchsize, image_size, multi_task)
@@ -242,7 +247,9 @@ def trainModels(dataset_name,
                          trainloader,
                          validateloader,
                          log_tag,
-                         class_no)
+                         class_no,
+                         save_threshold_epoch,
+                         save_interval_epoch)
 
 
 def getData(data_directory, dataset_name, train_batchsize, image_size, multi_task=True):
@@ -305,14 +312,16 @@ def trainSingleModel(model,
                      trainloader,
                      validateloader,
                      log_tag,
-                     class_no):
+                     class_no,
+                     save_threshold,
+                     save_interval):
 
     #
     device = torch.device('cuda')
     #
     save_model_name = model_name
     #
-    saved_information_path = '../../Results'
+    saved_information_path = './DRIVE_AV/Results'
     #
     try:
         os.mkdir(saved_information_path)
@@ -371,8 +380,13 @@ def trainSingleModel(model,
 
     print('\n')
 
-    # writer = SummaryWriter(saved_log_path + '/Log_' + save_model_name)
-    writer = SummaryWriter(comment=f'LR_{learning_rate}')
+    writer = SummaryWriter(saved_log_path + '/Log_' + save_model_name)
+    # writer = SummaryWriter(comment=f'LR_{learning_rate}')
+
+    # logging.info(f'''Starting training:
+    #     Epochs:          {num_epochs}
+    #     Learning rate:   {learning_rate}
+    # ''')
 
     model.to(device)
 
@@ -387,7 +401,11 @@ def trainSingleModel(model,
         train_h_dists = 0
         train_f1 = 0
         train_iou = 0
+
         train_main_loss = 0
+        train_auxilar_loss = 0
+        train_total_loss = 0
+
         train_recall = 0
         train_precision = 0
         train_effective_h = 0
@@ -448,42 +466,58 @@ def trainSingleModel(model,
 
                 loss = main_loss + auxilary_loss
 
+                train_total_loss += loss
+                train_main_loss += main_loss
+                train_auxilar_loss += auxilary_loss
+
             loss.backward()
             optimizer.step()
 
-        class_outputs = prob_outputs
+        # class_outputs = prob_outputs
 
-        val_score, acc, sensitivity, specificity, precision, G, F1_score_2, auc_roc, auc_pr = eval_net_multitask(epoch, model, validateloader, device, mask=True, model_name=model_name)
+        val_score, acc, sensitivity, specificity, precision, G, F1_score_2 = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
 
-        print(
-            'Step [{}/{}], '
-            'Train main loss: {:.4f}, '
-            'val acc: {:.4f}, '
-            'val F1:{:.4f}, '.format(epoch + 1, num_epochs,
-                                      train_main_loss / (j + 1),
-                                      acc,
-                                      F1_score_2))
+        if 'MTSARVSnet' in model_name:
+            print(
+                'Step [{}/{}], '
+                'Train total loss: {:.4f}, '
+                'Train auxilary loss: {:.4f}, '
+                'Train main loss: {:.4f}, '
+                'val acc: {:.4f}, '
+                'val score: {:.4f}, '
+                'val F1:{:.4f}, '.format(epoch + 1, num_epochs,
+                                         train_total_loss / (j + 1),
+                                         train_auxilar_loss / (j + 1),
+                                         train_main_loss / (j + 1),
+                                         acc,
+                                         val_score,
+                                         F1_score_2))
+        else:
+            print(
+                'Step [{}/{}], '
+                'Train total loss: {:.4f}, '
+                'val acc: {:.4f}, '
+                'val score: {:.4f}, '
+                'val F1:{:.4f}, '.format(epoch + 1, num_epochs,
+                                         train_total_loss / (j + 1),
+                                         acc,
+                                         val_score,
+                                         F1_score_2))
 
         logging.info('Validation sensitivity: {}'.format(sensitivity))
-        writer.add_scalar('sensitivity/val_G', sensitivity, epoch)
+        writer.add_scalar('sensitivity/val', sensitivity, epoch)
 
         logging.info('Validation specificity: {}'.format(specificity))
-        writer.add_scalar('specificity/val_G', specificity, epoch)
+        writer.add_scalar('specificity/val', specificity, epoch)
 
         logging.info('Validation precision: {}'.format(precision))
-        writer.add_scalar('precision/val_G', precision, epoch)
+        writer.add_scalar('precision/val', precision, epoch)
 
-        logging.info('Validation G: {}'.format(G))
-        writer.add_scalar('G/val_G', G, epoch)
+        logging.info('Validation: {}'.format(G))
+        writer.add_scalar('G/val', G, epoch)
 
         logging.info('Validation F1_score: {}'.format(F1_score_2))
-        writer.add_scalar('F1_score/val_G', F1_score_2, epoch)
-
-        logging.info('Validation auc_roc: {}'.format(auc_roc))
-        writer.add_scalar('Auc_roc/val_G', auc_roc, epoch)
-
-        logging.info('Validation auc_pr: {}'.format(auc_pr))
-        writer.add_scalar('Auc_pr/val_G', auc_pr, epoch)
+        writer.add_scalar('F1_score/val', F1_score_2, epoch)
 
         # if (class_outputs == 1).sum() > 1 and (labels == 1).sum() > 1:
         #     #
@@ -557,18 +591,33 @@ def trainSingleModel(model,
         # # # ================================================================== #
         # # #                        TensorboardX Logging                        #
         # # # # ================================================================ #
-        writer.add_scalars('acc metrics', {'train iou': train_iou / (j+1),
-                                           'train hausdorff dist': train_h_dists / (train_effective_h+1),
-                                           'val iou': validate_iou / (i + 1),
-                                           'val f1': validate_f1 / (i + 1)}, epoch + 1)
-
-        writer.add_scalars('loss values', {'main loss': train_main_loss / (j+1)}, epoch + 1)
+        # writer.add_scalars('acc metrics', {'train iou': train_iou / (j+1),
+        #                                    'train hausdorff dist': train_h_dists / (train_effective_h+1),
+        #                                    'val iou': validate_iou / (i + 1),
+        #                                    'val f1': validate_f1 / (i + 1)}, epoch + 1)
+        #
+        # writer.add_scalars('loss values', {'main loss': train_main_loss / (j+1)}, epoch + 1)
 
         for param_group in optimizer.param_groups:
             #
             if epoch == (num_epochs - 10):
                 param_group['lr'] = learning_rate * 0.1
                 # param_group['lr'] = learning_rate * ((1 - epoch / num_epochs) ** 0.999)
+
+        if epoch > save_threshold:
+
+            if epoch % save_interval == 0:
+
+                dir_checkpoint = saved_information_path + '/CheckPoints'
+
+                try:
+                    os.mkdir(dir_checkpoint)
+                except OSError:
+                    pass
+
+                torch.save(model, dir_checkpoint + '/' + save_model_name + '_current_epoch' + str(epoch) + '.pth')
+
+                print(save_model_name + '_' + str(epoch) + 'saved')
 
     # # ===============
     # Testing:
@@ -649,6 +698,83 @@ def trainSingleModel(model,
     # ff.write(str(result_dictionary))
     # ff.close()
     # save model
+    # ==========================
+    # New testing
+    # ==========================
+    acc_total = []
+    sensitivity_total = []
+    specificity_total = []
+    precision_total = []
+    G_total = []
+    F1_score_2_total = []
+
+    epoch_threshold = num_epochs - 9
+
+    for i in range(9):
+        # model.load_state_dict(torch.load('./DRIVE_AV/checkpoints/20200824_all/AV_model_unet_13CP_epoch{}.pth'.format(511 + 10 * i)))
+        current_model_name = dir_checkpoint + '/' + save_model_name + '_current_epoch' + str(epoch_threshold + 1 * i) + '.pth'
+        print(current_model_name)
+        # model.load_state_dict(torch.load(current_model_name))
+        model = torch.load(current_model_name)
+        # dir_checkpoint + '/' + save_model_name + '_' + str(epoch) + '.pth'
+        model.eval()
+        model.to(device=device)
+        test_score, acc, sensitivity, specificity, precision, G, F1_score_2 = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
+
+        acc_total.append(acc)
+        sensitivity_total.append(sensitivity)
+        specificity_total.append(specificity)
+        precision_total.append(precision)
+        G_total.append(G)
+        F1_score_2_total.append(F1_score_2)
+
+    print('Accuracy (mean): ', np.mean(acc_total))
+    print('Sensitivity (mean): ', np.mean(sensitivity_total))
+    print('specificity (mean): ', np.mean(specificity_total))
+    print('precision (mean): ', np.mean(precision_total))
+    print('G (mean): ', np.mean(G_total))
+    print('F1_score_2 (mean): ', np.mean(F1_score_2_total))
+
+    print('Accuracy (std): ', np.std(acc_total))
+    print('Sensitivity (std): ', np.std(sensitivity_total))
+    print('specificity (std): ', np.std(specificity_total))
+    print('precision (std): ', np.std(precision_total))
+    print('G (std): ', np.std(G_total))
+    print('F1_score_2 (std): ', np.std(F1_score_2_total))
+
+    result_dictionary_mean = {'Test Accuracy mean': str(np.mean(acc_total)),
+                              'Test Sensitivity mean': str(np.mean(sensitivity_total)),
+                              'Test Specificity mean': str(np.mean(specificity_total)),
+                              'Test Precision mean': str(np.mean(precision_total)),
+                              'Test G mean': str(np.mean(G_total)),
+                              'Test F1 mean': str(np.mean(F1_score_2))}
+
+    result_dictionary_std = {'Test Accuracy std': str(np.std(acc_total)),
+                              'Test Sensitivity std': str(np.std(sensitivity_total)),
+                              'Test Specificity std': str(np.std(specificity_total)),
+                              'Test Precision std': str(np.std(precision_total)),
+                              'Test G std': str(np.std(G_total)),
+                              'Test F1 std': str(np.std(F1_score_2))}
+
+    save_path = saved_information_path + '/quantitative_results'
+
+    try:
+        os.mkdir(save_path)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            raise
+        pass
+
+    ff_path_mean = save_path + '/test_result_mean.txt'
+    ff_mean = open(ff_path_mean, 'w')
+    ff_mean.write(str(result_dictionary_mean))
+    ff_mean.close()
+
+    ff_path_std = save_path + '/test_result_std.txt'
+    ff_std = open(ff_path_std, 'w')
+    ff_std.write(str(result_dictionary_std))
+    ff_std.close()
+    # ===========================
     stop = timeit.default_timer()
     #
     print('Time: ', stop - start)
@@ -659,10 +785,11 @@ def trainSingleModel(model,
     #
     torch.save(model, path_model)
     #
-    print('\nTraining finished and model saved\n')
+    print('\nTraining finished and final model saved\n')
     #
     # print('Test IoU: ' + str(test_iou) + '\n')
     # print('Test H-dist: ' + str(test_h_dist) + '\n')
     #
+
     return model
 
