@@ -1,5 +1,11 @@
 import os
+import glob
+from os import listdir
+
+from PIL import Image
+from os.path import splitext
 import sys
+import random
 import logging
 import errno
 import torch
@@ -15,70 +21,246 @@ import matplotlib.pyplot as plt
 import torch.functional as F
 from torch.utils import data
 
+# from torch.utils.tensorboard import SummaryWriter
+
 from tensorboardX import SummaryWriter
+
+from torchvision import transforms
 # ====================================
 
 from dataset import BasicDataset
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader, random_split
 
 # ====================================
 
 from Baselines_models import MTSARVSnet
 from Baselines_metrics import segmentation_scores, f1_score
 
+from eval import pad_imgs, dice_coeff, AUC_PR, AUC_ROC, pixel_values_in_mask, misc_measures
+from sklearn.metrics import auc, confusion_matrix, roc_auc_score, precision_recall_curve
 
-def trainModels(dataset_tag,
-                dataset_name,
+from Baselines_metrics import eval_net_multitask
+
+normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+
+train_transformer = transforms.Compose([
+    #transforms.Resize(256),
+    #transforms.RandomResizedCrop((224),scale=(0.5,1.0)),
+    transforms.Pad((13,4,14,4), fill=0, padding_mode='constant'),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(360),
+    transforms.ToTensor(),
+    #normalize
+])
+
+val_transformer = transforms.Compose([
+    #transforms.Resize(224),
+    #transforms.CenterCrop(224),
+    transforms.Pad((13,4,14,4), fill=0, padding_mode='constant'),
+    transforms.ToTensor(),
+    #normalize
+])
+
+
+class MultiTaskDataset(Dataset):
+
+    def __init__(self, imgs_dir, masks_dir_main, masks_dir_auxilary, img_size, transforms=train_transformer, mask_suffix=''):
+
+        self.imgs_dir = imgs_dir
+        self.masks_dir_main = masks_dir_main
+        self.masks_dir_auxilary = masks_dir_auxilary
+
+        self.mask_suffix = mask_suffix
+        self.img_size = img_size
+        self.transform = transforms
+
+        self.ids = [splitext(file)[0] for file in listdir(imgs_dir)
+                    if not file.startswith('.')]
+        logging.info(f'Creating dataset with {(self.ids)} ')
+        logging.info(f'Creating dataset with {len(self.ids)} examples')
+
+    def __len__(self):
+        return len(self.ids)
+
+    @classmethod
+    def pad_imgs(self, imgs, img_size):
+        img_h, img_w = imgs.shape[0], imgs.shape[1]
+        target_h, target_w = img_size[0], img_size[1]
+        if len(imgs.shape) == 3:
+            d = imgs.shape[2]
+            padded = np.zeros((target_h, target_w, d))
+        elif len(imgs.shape) == 2:
+            padded = np.zeros((target_h, target_w))
+        padded[(target_h - img_h) // 2:(target_h - img_h) // 2 + img_h, (target_w - img_w) // 2:(target_w - img_w) // 2 + img_w, ...] = imgs
+        # print(np.shape(padded))
+        return padded
+
+    @classmethod
+    def preprocess(self, pil_img, img_size):
+        # w, h = pil_img.size
+        newW, newH = img_size[0], img_size[1]
+        assert newW > 0 and newH > 0, 'Scale is too small'
+        # pil_img = pil_img.resize((newW, newH))
+
+        img_nd = np.array(pil_img)
+
+        img_size_target = img_size
+
+        # img_nd = self.pad_imgs(img_nd, img_size_target)
+
+        if len(img_nd.shape) == 2:
+            img_nd = np.expand_dims(img_nd, axis=2)
+
+        if img_nd.max() > 1:
+            img_nd = img_nd / 255
+
+        return img_nd
+
+    def __getitem__(self, index):
+
+        # idx = self.ids[i]
+
+        # print(idx)
+        # print(self.masks_dir_main + idx + '.*')
+        # print(self.masks_dir_auxilary + idx + '.*')
+
+        # all_images = glob.glob(os.path.join(self.imgs_dir, '*.png'))
+        # all_labels = glob.glob(os.path.join(self.labels_folder, '*.png'))
+        #
+        # all_labels.sort()
+        # all_images.sort()
+
+        # mask_file = glob(self.masks_dir + idx + self.mask_suffix + '.*')
+        # mask_file_main = glob(self.masks_dir_main + idx + '.png')
+        # mask_file_auxilary = glob(self.masks_dir_auxilary + idx + '.png')
+        # logging.info(f'Creating dataset with {len(mask_file)} mask')
+
+        # img_file = glob(self.imgs_dir + idx + '.png')
+
+        # assert len(mask_file_main) == 1, \
+        #     f'Either no main mask or multiple masks found for the ID {idx}: {mask_file_main}'
+        # assert len(mask_file_auxilary) == 1, \
+        #     f'Either no auxilary mask or multiple masks found for the ID {idx}: {mask_file_auxilary}'
+        # assert len(img_file) == 1, \
+        #     f'Either no image or multiple images found for the ID {idx}: {img_file}'
+
+        # print(os.path.join(self.imgs_dir, '*.png'))
+
+        all_images = glob.glob(os.path.join(self.imgs_dir, '*.tif'))
+        all_labels_main = glob.glob(os.path.join(self.masks_dir_main, '*.png'))
+        all_labels_auxilary = glob.glob(os.path.join(self.masks_dir_auxilary, '*.png'))
+
+        # print(len(all_images))
+        # print(len(all_labels_main))
+        # print(len(all_labels_auxilary))
+
+        all_labels_main.sort()
+        all_labels_auxilary.sort()
+        all_images.sort()
+
+        # mask_main = Image.open(mask_file_main[0])
+        # mask_auxilary = Image.open(mask_file_auxilary[0])
+        # img = Image.open(img_file[0])
+
+        mask_main = Image.open(all_labels_main[index])
+        mask_auxilary = Image.open(all_labels_auxilary[index])
+
+        img = Image.open(all_images[index])
+
+        # assert img.size == mask_main.size, \
+        #     f'Image and mask {idx} should be the same size, but are {img.size} and {mask_main.size}'
+
+        seed = np.random.randint(2147483647)
+        random.seed(seed)
+        torch.cuda.manual_seed(seed)
+
+        if self.transform:
+            img = self.transform(img)
+
+        random.seed(seed)  # apply this seed to target tranfsorms
+        torch.cuda.manual_seed(seed)  # needed for torchvision 0.7
+
+        if self.transform:
+            mask_main = self.transform(mask_main)
+            mask_auxilary = self.transform(mask_auxilary)
+
+        img = self.preprocess(img, self.img_size)
+        mask_main = self.preprocess(mask_main, self.img_size)
+        mask_auxilary = self.preprocess(mask_auxilary, self.img_size)
+
+        # print('the range of img is: ',np.unique(img))
+        # print('the range of mask is: ',np.unique(mask))
+        '''
+        if self.transform:
+            img = self.transform(img)
+            mask = self.transform(mask)
+        '''
+        return {
+            'image': torch.from_numpy(img).type(torch.FloatTensor),
+            'mask_main': torch.from_numpy(mask_main).type(torch.FloatTensor),
+            'mask_auxilary': torch.from_numpy(mask_auxilary).type(torch.FloatTensor)
+        }
+
+
+def trainModels(dataset_name,
                 data_directory,
                 input_dim,
                 class_no,
                 repeat,
                 train_batchsize,
-                augmentation,
                 num_epochs,
                 learning_rate,
                 network,
                 log_tag,
-                main_loss='dice'):
+                image_size=(592, 592),
+                multi_task=True):
     #
     for j in range(1, repeat + 1):
         #
         repeat_str = str(j)
         #
         if network == 'MTSARVSnet':
-            #
+
+            assert multi_task is True
+
             Exp = MTSARVSnet(input_dim=input_dim, output_dim=class_no)
             #
             Exp_name = 'MTSARVSnet_' + \
                        '_train_batch_' + str(train_batchsize) + \
                        '_repeat_' + str(repeat_str) + \
-                       '_main_loss_' + main_loss + \
                        '_lr_' + str(learning_rate) + \
                        '_epoch_' + str(num_epochs) + dataset_name
 
         # ====================================================================================================================================================================
-        trainloader, validateloader = getData(data_directory, dataset_name, dataset_tag, train_batchsize, augmentation)
+        trainloader, validateloader = getData(data_directory, dataset_name, train_batchsize, image_size, multi_task)
         # ===================
         trainSingleModel(Exp,
                          Exp_name,
                          num_epochs,
                          learning_rate,
                          dataset_name,
-                         train_batchsize,
                          trainloader,
                          validateloader,
-                         losstag=main_loss,
-                         class_no=class_no,
-                         log_tag=log_tag)
+                         log_tag,
+                         class_no)
 
 
-def getData(data_directory, dataset_name, dataset_tag, train_batchsize, data_augment):
+def getData(data_directory, dataset_name, train_batchsize, image_size, multi_task=True):
 
     # img_out_dir="./{}/AV_segmentation_results_{}_{}".format(args.dataset, args.dis, args.gan2seg)
     # dir_checkpoint="./{}/checkpoints/AV_model_{}_{}".format(args.dataset,args.dis,args.gan2seg)
     # auc_out_dir="{}/AV_auc_{}_{}".format(args.dataset, args.dis, args.gan2seg)
-    train_dir= "./data/DRIVE_AV/training/images/"
-    dir_mask = "./data/DRIVE_AV/training/2st_manual/"
+
+    if multi_task is False:
+        train_dir = data_directory + '/' + dataset_name + '/training/images/'
+        dir_mask = data_directory + '/' + dataset_name + '/training/1st_manual/'
+    else:
+        train_dir = data_directory + '/' + dataset_name + '/training/images/'
+        dir_mask_main = data_directory + '/' + dataset_name + '/training/1st_manual/'
+        dir_mask_auxiliary = data_directory + '/' + dataset_name + '/training/2st_manual/'
+
+    # train_dir = "./data/DRIVE_AV/training/images/"
+    # dir_mask = "./data/DRIVE_AV/training/2st_manual/"
 
     # # create files
     # if not os.path.isdir(img_out_dir):
@@ -88,15 +270,27 @@ def getData(data_directory, dataset_name, dataset_tag, train_batchsize, data_aug
     # if not os.path.isdir(auc_out_dir):
     #     os.makedirs(auc_out_dir)
 
-    val_percent = 0.2
+    # val_percent = 0.1
 
-    dataset = BasicDataset(train_dir, dir_mask, (592, 592))
-    n_val = int(len(dataset) * val_percent)
+    if multi_task is False:
+
+        dataset = BasicDataset(train_dir, dir_mask, image_size)
+
+    else:
+
+        dataset = MultiTaskDataset(train_dir, dir_mask_main, dir_mask_auxiliary, image_size)
+
+    # n_val = int(len(dataset) * val_percent)
+    # n_train = len(dataset) - n_val
+
+    n_val = 2
     n_train = len(dataset) - n_val
+
     train, val = random_split(dataset, [n_train, n_val])
-    train_loader = DataLoader(train, batch_size=1, shuffle=True, num_workers=1, pin_memory=True)
+
+    train_loader = DataLoader(train, batch_size=train_batchsize, shuffle=True, num_workers=2, pin_memory=True, drop_last=False)
     #val_loader = DataLoader(val, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True, drop_last=True)
-    val_loader = DataLoader(val, batch_size=1, shuffle=False, num_workers=2, pin_memory=True, drop_last=False)
+    val_loader = DataLoader(val, batch_size=1, shuffle=False, num_workers=1, pin_memory=True, drop_last=False)
 
     return train_loader, val_loader
 
@@ -108,10 +302,8 @@ def trainSingleModel(model,
                      num_epochs,
                      learning_rate,
                      datasettag,
-                     train_batchsize,
                      trainloader,
                      validateloader,
-                     losstag,
                      log_tag,
                      class_no):
 
@@ -172,14 +364,15 @@ def trainSingleModel(model,
         if exc.errno != errno.EEXIST:
             raise
         pass
-    #
+
     print('The current model is:')
-    #
+
     print(save_model_name)
-    #
+
     print('\n')
-    #
-    writer = SummaryWriter(saved_log_path + '/Log_' + save_model_name)
+
+    # writer = SummaryWriter(saved_log_path + '/Log_' + save_model_name)
+    writer = SummaryWriter(comment=f'LR_{learning_rate}')
 
     model.to(device)
 
@@ -201,18 +394,32 @@ def trainSingleModel(model,
 
         # for j, (images, labels) in enumerate(trainloader):
         for j, batch_current in enumerate(trainloader):
-            #
-            # print(np.unique(labels))
-            images = batch_current['image']
-            labels = batch_current['mask']
 
-            optimizer.zero_grad()
-            images = images.to(device=device, dtype=torch.float32)
-            labels = labels.to(device=device, dtype=torch.long)
+            # print(np.unique(labels))
 
             if 'MTSARVSnet' in model_name:
 
-                output, side_output1, side_output2, side_output3 = model(images)
+                images = batch_current['image']
+                labels_main = batch_current['mask_main']
+                labels_auxilary = batch_current['mask_auxilary']
+
+                images = images.to(device=device, dtype=torch.float32)
+                labels_main = labels_main.to(device=device, dtype=torch.float32)
+                labels_auxilary = labels_auxilary.to(device=device, dtype=torch.float32)
+
+            else:
+
+                images = batch_current['image']
+                labels = batch_current['mask']
+
+                images = images.to(device=device, dtype=torch.float32)
+                labels = labels.to(device=device, dtype=torch.float32)
+
+            optimizer.zero_grad()
+
+            if 'MTSARVSnet' in model_name:
+
+                output, side_output1, side_output2, side_output3, output_v, side_output1_v, side_output2_v, side_output3_v = model(images)
 
                 # print(output.size())
 
@@ -221,82 +428,132 @@ def trainSingleModel(model,
                 _, prob_outputs_side2 = torch.max(side_output2, dim=1)
                 _, prob_outputs_side3 = torch.max(side_output3, dim=1)
 
-                sideloss1 = nn.CrossEntropyLoss(reduction='mean')(torch.softmax(side_output1, dim=1), labels.squeeze(1))
-                sideloss2 = nn.CrossEntropyLoss(reduction='mean')(torch.softmax(side_output2, dim=1), labels.squeeze(1))
-                sideloss3 = nn.CrossEntropyLoss(reduction='mean')(torch.softmax(side_output3, dim=1), labels.squeeze(1))
+                # sideloss1 = nn.CrossEntropyLoss(reduction='mean')(torch.softmax(side_output1, dim=1), labels.squeeze(1))
+                # sideloss2 = nn.CrossEntropyLoss(reduction='mean')(torch.softmax(side_output2, dim=1), labels.squeeze(1))
+                # sideloss3 = nn.CrossEntropyLoss(reduction='mean')(torch.softmax(side_output3, dim=1), labels.squeeze(1))
 
-                mainloss = nn.CrossEntropyLoss(reduction='mean')(torch.softmax(output, dim=1), labels.squeeze(1))
+                sideloss1 = nn.BCELoss(reduction='mean')(side_output1, labels_main)
+                sideloss2 = nn.BCELoss(reduction='mean')(side_output2, labels_main)
+                sideloss3 = nn.BCELoss(reduction='mean')(side_output3, labels_main)
+                mainloss_main = nn.BCELoss(reduction='mean')(output, labels_main)
 
-                loss = mainloss + (sideloss1 + sideloss2 + sideloss3) / 3
+                auxilary_loss_main = nn.BCELoss(reduction='mean')(output_v, labels_auxilary)
+                auxilary_loss_side1 = nn.BCELoss(reduction='mean')(side_output1_v, labels_auxilary)
+                auxilary_loss_side2 = nn.BCELoss(reduction='mean')(side_output2_v, labels_auxilary)
+                auxilary_loss_side3 = nn.BCELoss(reduction='mean')(side_output3_v, labels_auxilary)
+
+                auxilary_loss = auxilary_loss_main + (auxilary_loss_side1 + auxilary_loss_side2 + auxilary_loss_side3) / 3
+
+                main_loss = mainloss_main + (sideloss1 + sideloss2 + sideloss3) / 3
+
+                loss = main_loss + auxilary_loss
 
             loss.backward()
             optimizer.step()
 
         class_outputs = prob_outputs
 
-        # only calculate training accuracy when labels are available in training data:
-        if torch.max(labels) == 1.0 and torch.min(labels) == 0.0:
+        val_score, acc, sensitivity, specificity, precision, G, F1_score_2, auc_roc, auc_pr = eval_net_multitask(epoch, model, validateloader, device, mask=True, model_name=model_name)
 
-            # if (class_outputs == 1).sum() > 1 and (labels == 1).sum() > 1:
-            #     #
-            #     dist_ = hd95(class_outputs, labels, class_no)
-            #     train_h_dists += dist_
-            #     train_effective_h = train_effective_h + 1
-                #
-            train_mean_iu_ = segmentation_scores(labels, class_outputs, class_no)
-            #
-            train_f1_, train_recall_, train_precision_, TPs_, TNs_, FPs_, FNs_, Ps_, Ns_ = f1_score(labels, class_outputs, class_no)
-            #
-            train_main_loss += loss.item()
-            train_f1 += train_f1_
-            train_iou += train_mean_iu_
-            train_recall += train_recall_
-            train_precision += train_precision_
+        print(
+            'Step [{}/{}], '
+            'Train main loss: {:.4f}, '
+            'val acc: {:.4f}, '
+            'val F1:{:.4f}, '.format(epoch + 1, num_epochs,
+                                      train_main_loss / (j + 1),
+                                      acc,
+                                      F1_score_2))
 
-        # Evaluate at the end of each epoch:
-        model.eval()
-        with torch.no_grad():
-            #
-            validate_iou = 0
-            validate_f1 = 0
-            validate_h_dist = 0
-            validate_h_dist_effective = 0
-            #
-            # for i, (val_img, val_label, val_name) in enumerate(validateloader):
-            for i, val_batch_current in enumerate(validateloader):
+        logging.info('Validation sensitivity: {}'.format(sensitivity))
+        writer.add_scalar('sensitivity/val_G', sensitivity, epoch)
 
-                val_img = val_batch_current['image']
-                val_label = val_batch_current['mask']
+        logging.info('Validation specificity: {}'.format(specificity))
+        writer.add_scalar('specificity/val_G', specificity, epoch)
 
-                val_img = val_img.to(device=device, dtype=torch.float32)
-                val_label = val_label.to(device=device, dtype=torch.long)
+        logging.info('Validation precision: {}'.format(precision))
+        writer.add_scalar('precision/val_G', precision, epoch)
 
-                assert torch.max(val_label) == 1.0
-                assert torch.min(val_label) == 0.0
+        logging.info('Validation G: {}'.format(G))
+        writer.add_scalar('G/val_G', G, epoch)
 
-                if 'MTSARVSnet' in model_name:
+        logging.info('Validation F1_score: {}'.format(F1_score_2))
+        writer.add_scalar('F1_score/val_G', F1_score_2, epoch)
 
-                    val_outputs, val_outputs_side1, val_outputs_side2, val_outputs_side3 = model(val_img)
-                    _, val_class_outputs = torch.max(val_outputs, dim=1)
+        logging.info('Validation auc_roc: {}'.format(auc_roc))
+        writer.add_scalar('Auc_roc/val_G', auc_roc, epoch)
 
-                eval_mean_iu_ = segmentation_scores(val_label, val_class_outputs, class_no)
-                eval_f1_, eval_recall_, eval_precision_, eTP, eTN, eFP, eFN, eP, eN = f1_score(val_label, val_class_outputs, class_no)
-                validate_iou += eval_mean_iu_
-                validate_f1 += eval_f1_
-                #
+        logging.info('Validation auc_pr: {}'.format(auc_pr))
+        writer.add_scalar('Auc_pr/val_G', auc_pr, epoch)
+
+        # if (class_outputs == 1).sum() > 1 and (labels == 1).sum() > 1:
+        #     #
+        #     dist_ = hd95(class_outputs, labels, class_no)
+        #     train_h_dists += dist_
+        #     train_effective_h = train_effective_h + 1
+        #
+        # train_mean_iu_ = segmentation_scores(labels, class_outputs, class_no)
+        # #
+        # train_f1_, train_recall_, train_precision_, TPs_, TNs_, FPs_, FNs_, Ps_, Ns_ = f1_score(labels, class_outputs, class_no)
+        #
+        # train_main_loss += loss.item()
+        # train_f1 += train_f1_
+        # train_iou += train_mean_iu_
+        # train_recall += train_recall_
+        # train_precision += train_precision_
+
+        # # Evaluate at the end of each epoch:
+        # model.eval()
+        # with torch.no_grad():
+        #     #
+        #     validate_iou = 0
+        #     validate_f1 = 0
+        #     validate_h_dist = 0
+        #     validate_h_dist_effective = 0
+        #     #
+        #     # for i, (val_img, val_label, val_name) in enumerate(validateloader):
+        #     for i, val_batch_current in enumerate(validateloader):
+        #
+        #         # val_img = val_batch_current['image']
+        #         # val_label = val_batch_current['mask']
+        #         #
+        #         # val_img = val_img.to(device=device, dtype=torch.float32)
+        #         # val_label = val_label.to(device=device, dtype=torch.long)
+        #
+        #         if 'MTSARVSnet' in model_name:
+        #
+        #             val_img = batch_current['image']
+        #             labels_main = batch_current['mask_main']
+        #             labels_auxilary = batch_current['mask_auxilary']
+        #
+        #             images = images.to(device=device, dtype=torch.float32)
+        #             labels_main = labels_main.to(device=device, dtype=torch.float32)
+        #             labels_auxilary = labels_auxilary.to(device=device, dtype=torch.float32)
+        #
+        #         else:
+        #
+        #             images = batch_current['image']
+        #             labels = batch_current['mask']
+        #
+        #             images = images.to(device=device, dtype=torch.float32)
+        #             labels = labels.to(device=device, dtype=torch.float32)
+        #
+        #
+        #         if 'MTSARVSnet' in model_name:
+        #
+        #             val_outputs, val_outputs_side1, val_outputs_side2, val_outputs_side3 = model(val_img)
+        #             _, val_class_outputs = torch.max(val_outputs, dim=1)
+        #
+        #         eval_mean_iu_ = segmentation_scores(val_label, val_class_outputs, class_no)
+        #         eval_f1_, eval_recall_, eval_precision_, eTP, eTN, eFP, eFN, eP, eN = f1_score(val_label, val_class_outputs, class_no)
+        #         validate_iou += eval_mean_iu_
+        #         validate_f1 += eval_f1_
+        #         #
                 # if (val_class_outputs == 1).sum() > 1 and (val_label == 1).sum() > 1:
                 #     v_dist_ = hd95(val_class_outputs, val_label, class_no)
                 #     validate_h_dist += v_dist_
                 #     validate_h_dist_effective = validate_h_dist_effective + 1
 
-        print(
-            'Step [{}/{}], '
-            'Train main loss: {:.4f}, '
-            'Train iou: {:.4f}, '
-            'val iou:{:.4f}, '.format(epoch + 1, num_epochs,
-                                      train_main_loss / (j + 1),
-                                      train_iou / (j + 1),
-                                      validate_iou / (i + 1)))
+
         # # # ================================================================== #
         # # #                        TensorboardX Logging                        #
         # # # # ================================================================ #

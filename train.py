@@ -199,6 +199,7 @@ def train_net(net_G,
                         tag = tag.replace('.', '/')
                         writer.add_histogram('weights/' + tag, value.data.cpu().numpy(), global_step)
                         writer.add_histogram('grads/' + tag, value.grad.data.cpu().numpy(), global_step)
+
                     val_score, acc, sensitivity, specificity, precision, G, F1_score_2, auc_roc, auc_pr = eval_net(epoch, net_G, val_loader, device, mask=True)
                     scheduler.step(val_score)
                     writer.add_scalar('learning_rate', optimizer_G.param_groups[0]['lr'], global_step)

@@ -5,7 +5,14 @@ from sklearn.metrics import precision_score, recall_score
 from sklearn.metrics import confusion_matrix
 from scipy.ndimage import _ni_support
 
+import torch.nn.functional as F
+
+from PIL import Image
+
 from scipy.ndimage.morphology import distance_transform_edt, binary_erosion, generate_binary_structure
+
+from eval import pad_imgs, dice_coeff, AUC_PR, AUC_ROC, threshold_by_otsu, pixel_values_in_mask, misc_measures
+from sklearn.metrics import auc, confusion_matrix, roc_auc_score, precision_recall_curve
 from scipy import ndimage
 # good references:
 # https://github.com/meetshah1995/pytorch-semseg/blob/master/ptsemseg/metrics.py
@@ -364,3 +371,76 @@ def hd95(result, reference, class_no, voxelspacing=None, connectivity=1):
     #
     hd95_mean = np.nanmean(hd95)
     return hd95_mean
+
+
+def eval_net_multitask(epoch, net, loader, device, mask, model_name):
+    """Evaluation without the densecrf with the dice coefficient"""
+    net.eval()
+    # mask_type = torch.float32 if net.n_classes == 1 else torch.long
+    n_val = len(loader)  # the number of batch
+    tot = 0
+    img_size = (592, 592)
+    module = Image.open('./data/DRIVE_AV/test/mask/01_test_mask.gif')
+    module = np.asarray(module) / 255
+
+    module_pad = pad_imgs(module, img_size).flatten()
+
+    # with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
+    for batch in loader:
+
+        if 'MTSARVSnet' in model_name:
+
+            imgs, true_masks_main, true_masks_auxilary = batch['image'], batch['mask_main'], batch['mask_auxilary']
+            imgs = imgs.to(device=device, dtype=torch.float32)
+            true_masks = true_masks_main.to(device=device, dtype=torch.float32)
+
+        else:
+
+            imgs, true_masks = batch['image'], batch['mask']
+            imgs = imgs.to(device=device, dtype=torch.float32)
+            true_masks = true_masks.to(device=device, dtype=torch.float32)
+
+        with torch.no_grad():
+
+            if 'MTSARVSnet' in model_name:
+
+                mask_pred, side_output1, side_output2, side_output3, output_v, side_output1_v, side_output2_v, side_output3_v = net(imgs)
+
+            else:
+
+                mask_pred = net(imgs)
+
+        # if net.output_dim > 1:
+        # tot += F.cross_entropy(mask_pred, true_masks).item()
+        # else:
+            # pred = torch.sigmoid(mask_pred)
+        pred = (mask_pred > 0.5).float()
+
+        tot += dice_coeff(pred, true_masks).item()
+
+        if mask:
+            # mask_pred_sigmoid = torch.sigmoid(mask_pred)
+            mask_pred_sigmoid_cpu = mask_pred.detach().cpu().numpy().flatten()
+            true_masks_cpu = true_masks.detach().cpu().numpy().flatten()
+
+            vessels_in_mask, generated_in_mask = pixel_values_in_mask(true_masks_cpu, mask_pred_sigmoid_cpu, module_pad)
+            auc_roc = AUC_ROC(vessels_in_mask, generated_in_mask)
+            auc_pr = AUC_PR(vessels_in_mask, generated_in_mask)
+
+            binarys_in_mask = threshold_by_otsu(generated_in_mask)
+
+            ########################################
+            acc, sensitivity, specificity, precision, G, F1_score_2 = misc_measures(vessels_in_mask, binarys_in_mask)
+
+            ######################################
+            # print test images
+            '''
+            segmented_vessel=utils.remain_in_mask(generated, test_masks)
+            for index in range(segmented_vessel.shape[0]):
+                Image.fromarray((segmented_vessel[index,:,:]*255).astype(np.uint8)).save(os.path.join(img_out_dir,str(n_round)+"_{:02}_segmented.png".format(index+1)))
+            '''
+            # pbar.update()
+
+    net.train()
+
+    return tot / n_val, acc, sensitivity, specificity, precision, G, F1_score_2, auc_roc, auc_pr

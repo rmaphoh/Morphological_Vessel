@@ -26,10 +26,14 @@ def pad_imgs( imgs, img_size):
 
 def pixel_values_in_mask(true_vessels, pred_vessels, module_pad):
 
-
     true_vessels = np.squeeze(true_vessels)
     pred_vessels = np.squeeze(pred_vessels)
-    
+
+    # print(np.shape(true_vessels))
+    # print(np.shape(pred_vessels))
+
+    # print(np.shape(module_pad))
+
     true_vessels = (true_vessels[module_pad != 0])
     pred_vessels = (pred_vessels[module_pad != 0])
 
@@ -49,7 +53,7 @@ def AUC_ROC(true_vessel_arr, pred_vessel_arr):
     return AUC_ROC
 
 def threshold_by_otsu(pred_vessels):
-    
+
     # cut by otsu threshold
     threshold=filters.threshold_otsu(pred_vessels)
     pred_vessels_bin=np.zeros(pred_vessels.shape)

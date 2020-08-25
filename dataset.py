@@ -36,6 +36,7 @@ fundus_imgs[index,...]=(fundus_imgs[index,...]-mean)/std
 '''
 
 class BasicDataset(Dataset):
+
     def __init__(self, imgs_dir, masks_dir,  img_size, transforms = train_transformer, mask_suffix=''):
         self.imgs_dir = imgs_dir
         self.masks_dir = masks_dir
@@ -139,3 +140,5 @@ class BasicDataset(Dataset):
 class CarvanaDataset(BasicDataset):
     def __init__(self, imgs_dir, masks_dir, scale=1):
         super().__init__(imgs_dir, masks_dir, scale, mask_suffix='_mask')
+
+

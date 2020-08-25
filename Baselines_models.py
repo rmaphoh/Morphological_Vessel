@@ -121,15 +121,16 @@ class OutputBlock(nn.Module):
     def forward(self, x):
 
         x1 = self.conv1(x)
+
         x2 = self.conv2(x)
 
         output = torch.cat([x1, x2], dim=1)
 
         x2 = self.conv3(x2)
 
-        x2 = self.sigmoid1(x2)
+        output_side = self.sigmoid1(x2)
 
-        x2 = self.activation(x2)
+        x2 = self.activation(output_side)
 
         output = output*x2
 
@@ -137,7 +138,7 @@ class OutputBlock(nn.Module):
 
         output = self.sigmoid2(output)
 
-        return output
+        return output, output_side
 
 
 class MTSARVSnet(nn.Module):
@@ -192,14 +193,14 @@ class MTSARVSnet(nn.Module):
         x = self.conv1(x)
         x1 = self.conv2(x)
         side_output1 = self.upsample(x1)
-        side_output1 = self.sideoutput1(side_output1)
+        side_output1, side_output1_v = self.sideoutput1(side_output1)
 
         # x2 = self.downsample(x1)
         x2 = self.conv3(x1)
         side_output2 = self.upsample(x2)
         side_output2 = self.deep_sup2(side_output2)
         side_output2 = self.upsample(side_output2)
-        side_output2 = self.sideoutput2(side_output2)
+        side_output2, side_output2_v = self.sideoutput2(side_output2)
 
         x3 = self.conv4(x2)
         side_output3 = self.upsample(x3)
@@ -207,7 +208,7 @@ class MTSARVSnet(nn.Module):
         side_output3 = self.upsample(side_output3)
         side_output3 = self.deep_sup32(side_output3)
         side_output3 = self.upsample(side_output3)
-        side_output3 = self.sideoutput3(side_output3)
+        side_output3, side_output3_v = self.sideoutput3(side_output3)
 
         x4 = self.conv5(x3)
         output = self.upsample(x4)
@@ -234,6 +235,6 @@ class MTSARVSnet(nn.Module):
         output = self.dconv32(output)
 
         output = self.upsample(output)
-        output = self.output_main(output)
+        output, output_v = self.output_main(output)
 
-        return output, side_output1, side_output2, side_output3
+        return output, side_output1, side_output2, side_output3, output_v, side_output1_v, side_output2_v, side_output3_v
