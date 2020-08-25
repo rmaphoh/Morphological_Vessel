@@ -18,6 +18,8 @@ import torch
 
 ##########################  Unet ######################################3
 
+'''
+
 class Generator(nn.Module):
     def __init__(self, input_channels, n_filters, n_classes, bilinear=False):
         super(Generator, self).__init__()
@@ -191,9 +193,90 @@ class Up(nn.Module):
 
 '''
 
-class Generator(nn.Module):
+class UNet(nn.Module):
+    def __init__(self, n_channels, n_classes, bilinear=True):
+        super(UNet, self).__init__()
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
+
+        self.inc = DoubleConv(n_channels, 64)
+        self.down1 = Down(64, 128)
+        self.down2 = Down(128, 256)
+        self.down3 = Down(256, 512)
+        factor = 2 if bilinear else 1
+        self.down4 = Down(512, 1024 // factor)
+        self.up1 = Up(1024, 512 // factor, bilinear)
+        self.up2 = Up(512, 256 // factor, bilinear)
+        self.up3 = Up(256, 128 // factor, bilinear)
+        self.up4 = Up(128, 64, bilinear)
+        self.outc = OutConv(64, n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        logits = self.outc(x)
+        return logits
+
+
+
+class Generator_main(nn.Module):
     def __init__(self, input_channels, n_filters, n_classes, bilinear=False):
-        super(Generator, self).__init__()
+        super(Generator_main, self).__init__()
+
+        self.n_channels = input_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
+
+        self.inc = DoubleConv(input_channels, n_filters)
+        self.down1 = Down(n_filters, 2*n_filters)
+        self.down2 = Down(2*n_filters, 4*n_filters)
+        self.down3 = Down(4*n_filters, 8*n_filters)
+        self.down4 = Down(8*n_filters, 16*n_filters)
+
+        self.up1 = Up_new(16*n_filters, 8*n_filters, bilinear)
+        self.S1 = side_one(8*n_filters, n_classes)
+
+        self.up2 = Up_new(8*n_filters, 4*n_filters, bilinear)
+        self.S2 = side_two(4*n_filters, n_classes)
+
+        self.up3 = Up_new(4*n_filters, 2*n_filters, bilinear)
+        self.S3 = side_three(2*n_filters, n_classes)
+
+        self.up4 = Up_new(2*n_filters, 1*n_filters, bilinear)
+        
+        self.outc = OutConv((n_filters+6), n_classes)
+
+
+    def forward(self, x, x_a, x_v):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x = self.up1(x5, x4)
+        s1 = self.S1(x)
+        x = self.up2(x, x3)
+        s2 = self.S2(x)
+        x = self.up3(x, x2)
+        s3 = self.S3(x)
+        x = self.up4(x, x1)
+        x_fusion = torch.cat([x_a, x, x_v], dim=1)
+        logits = self.outc(x_fusion)
+
+        return logits, s1, s2, s3
+
+
+class Generator_branch(nn.Module):
+    def __init__(self, input_channels, n_filters, n_classes, bilinear=False):
+        super(Generator_branch, self).__init__()
 
         self.n_channels = input_channels
         self.n_classes = n_classes
@@ -226,6 +309,11 @@ class Generator(nn.Module):
         return logits
 
 
+
+
+
+
+
 class Discriminator(nn.Module):
     def __init__(self, input_channels, n_filters, n_classes, bilinear=True):
         super(Discriminator, self).__init__()
@@ -255,10 +343,12 @@ class Discriminator(nn.Module):
         x5 = self.down4(x4)
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
-        x = self.up3(x3, x2)
+        x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
         return logits
+
+
 
 
 class DoubleConv(nn.Module):
@@ -366,13 +456,13 @@ class DoubleAdd(nn.Module):
     def forward(self, x1, x2):
         
         n, c, h, w = list(x1.size())                                                    
-        x1 = torch.reshape(input=x1, shape=(n, c // 2, h, w, 2))      
-        x1 = x1.sum(dim=4)
+        x1 = torch.reshape(input=x1, shape=(n, c // 2, 2, h, w))      
+        x1 = x1.sum(dim=2)
         x1 = self.activation(x1)
 
         n, c, h, w = list(x2.size())                                                    
-        x2 = torch.reshape(input=x2, shape=(n, c // 2, h, w, 2))      
-        x2 = x2.sum(dim=4)
+        x2 = torch.reshape(input=x2, shape=(n, c // 2, 2, h, w))      
+        x2 = x2.sum(dim=2)
         x2 = self.activation(x2)
         return torch.cat([x1, x2], dim=1)
 
@@ -392,19 +482,92 @@ class Up_new(nn.Module):
 
 
     def forward(self, x1, x2):
-        x1 = self.conv_bottom(x1)
-
+        x = self.conv_bottom(x1)
+        x = self.up(x)
         #road 1
-        x_1 = self.up(x1)
-        x_1 = self.add(x_1,x2)
+        
+        x_1 = self.add(x,x2)
 
         #road 2
-        x_2 = torch.cat([x_1, x2], dim=1)
+        x_2 = torch.cat([x, x2], dim=1)
         x_2 = self.conv(x_2)
 
         return torch.add(x_1, x_2)
 
-'''
+
+
+class Side_block(nn.Module):
+
+    def __init__(self, in_channels, out_channels, bilinear=False):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        
+        return self.block(x)
+
+
+
+class side_one(nn.Module):
+
+    def __init__(self, in_channels, out_channels, bilinear=False):
+        super().__init__()
+
+        self.side_block_1 = Side_block(in_channels, in_channels//2)
+        self.side_block_2 = Side_block(in_channels//2, in_channels//4)
+        self.side_block_3 = Side_block(in_channels//4, in_channels//8)
+        self.side_output = nn.Conv2d(32, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        
+        x = self.side_block_1(x)
+        x = self.side_block_2(x)
+        x = self.side_block_3(x)
+        x = self.side_output(x)
+
+        return x
+        #return self.acti(x)
+
+
+class side_two(nn.Module):
+
+    def __init__(self, in_channels, out_channels, bilinear=False):
+        super().__init__()
+
+        self.side_block_1 = Side_block(in_channels, in_channels//2)
+        self.side_block_2 = Side_block(in_channels//2, in_channels//4)
+        self.side_output = nn.Conv2d(32, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        
+        x = self.side_block_1(x)
+        x = self.side_block_2(x)
+        x = self.side_output(x)
+
+        return x
+        #return self.acti(x)
+
+
+class side_three(nn.Module):
+
+    def __init__(self, in_channels, out_channels, bilinear=False):
+        super().__init__()
+
+        self.side_block_1 = Side_block(in_channels, in_channels//2)
+        self.side_output = nn.Conv2d(32, out_channels, kernel_size=1)
+
+    def forward(self, x):
+
+        x = self.side_block_1(x)
+        x = self.side_output(x)
+
+        return x
+
 '''
 class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):

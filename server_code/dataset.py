@@ -35,12 +35,13 @@ val_transformer = transforms.Compose([
 
 
 class BasicDataset(Dataset):
-    def __init__(self, imgs_dir, masks_dir,  img_size, transforms = train_transformer, mask_suffix=''):
+    def __init__(self, imgs_dir, masks_dir,  img_size, transforms = train_transformer, train_or=True, mask_suffix=''):
         self.imgs_dir = imgs_dir
         self.masks_dir = masks_dir
         self.mask_suffix = mask_suffix
         self.img_size = img_size
         self.transform = transforms
+        self.train_or = train_or
         i = 0
         self.ids = [splitext(file)[0] for file in listdir(imgs_dir)
                     if not file.startswith('.')]
@@ -73,7 +74,7 @@ class BasicDataset(Dataset):
         return imgs 
 
     @classmethod
-    def preprocess(self, pil_img, mask, img_size,k):
+    def preprocess(self, pil_img, mask, img_size, train_or, k):
         #w, h = pil_img.size
         newW, newH = img_size[0], img_size[1]
         assert newW > 0 and newH > 0, 'Scale is too small'
@@ -87,16 +88,18 @@ class BasicDataset(Dataset):
         #print('@@@@@@@@@@@@@@', np.shape(img_array))
         #print('@@@@@@@@@@@@@@', np.shape(mask_array))
 
-        if np.random.random()>0.5:
-            img_array=img_array[:,::-1,:]    # flipped imgs
-            mask_array=mask_array[:,::-1]
+        if train_or:
+            if np.random.random()>0.5:
+                img_array=img_array[:,::-1,:]    # flipped imgs
+                mask_array=mask_array[:,::-1]
 
-        angle = 3 * np.random.randint(120)
-        img_array = rotate(img_array, angle, axes=(0, 1), reshape=False)
-        #print('@@@@@@@@@@@@@@', np.shape(img_array))
-        #print('@@@@@@@@@@@@@@', np.shape(mask_array))
-        img_array = self.random_perturbation(img_array)
-        mask_array = np.round(rotate(mask_array, angle, axes=(0, 1), reshape=False))
+            angle = 3 * np.random.randint(120)
+            img_array = rotate(img_array, angle, axes=(0, 1), reshape=False)
+            #print('@@@@@@@@@@@@@@', np.shape(img_array))
+            #print('@@@@@@@@@@@@@@', np.shape(mask_array))
+
+            img_array = self.random_perturbation(img_array)
+            mask_array = np.round(rotate(mask_array, angle, axes=(0, 1), reshape=False))
 
         mean_r=np.mean(img_array[...,0][img_array[...,0] > 00.0],axis=0)
         std_r=np.std(img_array[...,0][img_array[...,0] > 00.0],axis=0)
@@ -131,6 +134,9 @@ class BasicDataset(Dataset):
         #mask_array_img_squ.save('./aug_results/new/inside_mask_{:02}.png'.format(k))
         img_array = img_array.transpose((2, 0, 1))
         mask_array = mask_array.transpose((2, 0, 1))
+
+        mask_array = np.where(mask_array > 0.5, 1, 0)
+
         #print('!!!!!!!!!!!!!!', np.shape(img_array))
         #print('!!!!!!!!!!!!!!', np.shape(mask_array))
 
@@ -152,6 +158,7 @@ class BasicDataset(Dataset):
             f'Either no mask or multiple masks found for the ID {idx}: {mask_file}'
         assert len(img_file) == 1, \
             f'Either no image or multiple images found for the ID {idx}: {img_file}'
+        
         mask = Image.open(mask_file[0])
         img = Image.open(img_file[0])
         
@@ -160,7 +167,7 @@ class BasicDataset(Dataset):
         
 
         if self.transform:
-            img, mask = self.preprocess(img, mask, self.img_size, i)
+            img, mask = self.preprocess(img, mask, self.img_size, self.train_or, i)
 
 
 
