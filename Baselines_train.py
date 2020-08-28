@@ -17,11 +17,15 @@ import argparse
 
 import tqdm
 
+from PIL import Image, ImageEnhance
+
 import numpy as np
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import torch.functional as F
 from torch.utils import data
+
+from scipy.ndimage import rotate
 
 # from torch.utils.tensorboard import SummaryWriter
 
@@ -66,11 +70,13 @@ val_transformer = transforms.Compose([
 
 class MultiTaskDataset(Dataset):
 
-    def __init__(self, imgs_dir, masks_dir_main, masks_dir_auxilary, img_size, transforms=train_transformer, mask_suffix=''):
+    def __init__(self, imgs_dir, masks_dir_main, masks_dir_auxilary, img_size, transforms=train_transformer, train_or=True, mask_suffix=''):
 
         self.imgs_dir = imgs_dir
         self.masks_dir_main = masks_dir_main
         self.masks_dir_auxilary = masks_dir_auxilary
+
+        self.train_or = train_or
 
         self.mask_suffix = mask_suffix
         self.img_size = img_size
@@ -83,6 +89,15 @@ class MultiTaskDataset(Dataset):
 
     def __len__(self):
         return len(self.ids)
+
+    @classmethod
+    def random_perturbation(self,imgs):
+        for i in range(imgs.shape[0]):
+            im=Image.fromarray(imgs[i,...].astype(np.uint8))
+            en=ImageEnhance.Color(im)
+            im=en.enhance(random.uniform(0.8,1.2))
+            imgs[i,...]= np.asarray(im).astype(np.float32)
+        return imgs
 
     @classmethod
     def pad_imgs(self, imgs, img_size):
@@ -98,25 +113,127 @@ class MultiTaskDataset(Dataset):
         return padded
 
     @classmethod
-    def preprocess(self, pil_img, img_size):
+    def preprocess(self, pil_img, mask1, mask2, img_size, train_or, k):
         # w, h = pil_img.size
         newW, newH = img_size[0], img_size[1]
         assert newW > 0 and newH > 0, 'Scale is too small'
         # pil_img = pil_img.resize((newW, newH))
 
-        img_nd = np.array(pil_img)
+        img_array = np.array(pil_img)
+        mask_array1 = np.array(mask1) / 255
+        mask_array2 = np.array(mask2) / 255
 
-        img_size_target = img_size
+        img_array = self.pad_imgs(img_array, img_size)
+        mask_array1 = self.pad_imgs(mask_array1, img_size)
+        mask_array2 = self.pad_imgs(mask_array2, img_size)
+        # print('@@@@@@@@@@@@@@', np.shape(img_array))
+        # print('@@@@@@@@@@@@@@', np.shape(mask_array))
 
-        # img_nd = self.pad_imgs(img_nd, img_size_target)
+        if train_or:
+            if np.random.random() > 0.5:
+                img_array = img_array[:, ::-1, :]  # flipped imgs
+                mask_array1 = mask_array1[:, ::-1]
+                mask_array2 = mask_array2[:, ::-1]
 
-        if len(img_nd.shape) == 2:
-            img_nd = np.expand_dims(img_nd, axis=2)
+            angle = 3 * np.random.randint(120)
+            img_array = rotate(img_array, angle, axes=(0, 1), reshape=False)
+            # print('@@@@@@@@@@@@@@', np.shape(img_array))
+            # print('@@@@@@@@@@@@@@', np.shape(mask_array))
 
-        if img_nd.max() > 1:
-            img_nd = img_nd / 255
+            img_array = self.random_perturbation(img_array)
+            mask_array1 = np.round(rotate(mask_array1, angle, axes=(0, 1), reshape=False))
+            mask_array2 = np.round(rotate(mask_array2, angle, axes=(0, 1), reshape=False))
 
-        return img_nd
+        mean_r = np.mean(img_array[..., 0][img_array[..., 0] > 00.0], axis=0)
+        std_r = np.std(img_array[..., 0][img_array[..., 0] > 00.0], axis=0)
+
+        mean_g = np.mean(img_array[..., 1][img_array[..., 0] > 00.0], axis=0)
+        std_g = np.std(img_array[..., 1][img_array[..., 0] > 00.0], axis=0)
+
+        mean_b = np.mean(img_array[..., 2][img_array[..., 0] > 00.0], axis=0)
+        std_b = np.std(img_array[..., 2][img_array[..., 0] > 00.0], axis=0)
+        # print('!!!!!!!!!!!', len(mean))
+        # print('!!!!!!!!!!!', len(std))
+
+        # assert len(mean)==3 and len(std)==3
+        # img_array=(img_array-mean)/std
+        img_array[..., 0] = (img_array[..., 0] - mean_r) / std_r
+        img_array[..., 1] = (img_array[..., 1] - mean_g) / std_g
+        img_array[..., 2] = (img_array[..., 2] - mean_b) / std_b
+
+        if len(img_array.shape) == 2:
+            img_array = np.expand_dims(img_array, axis=2)
+
+        if len(mask_array1.shape) == 2:
+            mask_array1 = np.expand_dims(mask_array1, axis=2)
+
+        if len(mask_array2.shape) == 2:
+            mask_array2 = np.expand_dims(mask_array2, axis=2)
+        # print(np.shape(img_array))
+
+        # image_array_img = Image.fromarray((img_array*255).astype(np.uint8))
+        # image_array_img.save('./aug_results/new/inside_img_{:02}.png'.format(k))
+        # mask_array_img_squ = np.squeeze(mask_array)
+        # mask_array_img_squ = Image.fromarray((mask_array_img_squ*255).astype(np.uint8))
+        # image_array_img.save('./aug_results/new/inside_img_{:02}.png'.format(k))
+        # mask_array_img_squ.save('./aug_results/new/inside_mask_{:02}.png'.format(k))
+        img_array = img_array.transpose((2, 0, 1))
+
+        # plt.imshow(mask_array1)
+        # plt.show()
+
+        # mask_array1 = mask_array1.transpose((2, 0, 1))
+        # # mask_array1 = np.where(mask_array1 > 0.5, 1, 0)
+        #
+        # mask_array2 = mask_array2.transpose((2, 0, 1))
+        # # mask_array2 = np.where(mask_array2 > 0.5, 1, 0)
+
+        # print('!!!!!!!!!!!!!!', np.shape(img_array))
+        # print('!!!!!!!!!!!!!!', np.shape(mask_array1))
+        # print('!!!!!!!!!!!!!!', np.shape(mask_array2))
+
+        h, w, c = mask_array1.shape[0], mask_array1.shape[1], mask_array1.shape[2]
+
+        # (todo) two dimension (h, w)
+        mask_array1_new = np.zeros((h, w), dtype=np.float32)
+
+        # for hh in range(h):
+        #     for ww in range(w):
+        #         if mask_array1[0, hh, ww] == 0 and mask_array1[1, hh, ww] == 0 and mask_array1[2, hh, ww] == 0:
+        #             print('yes')
+        #         else:
+        #             print('no')
+
+        # print(np.unique(mask_array1))
+        # print(np.unique(mask_array2))
+
+        # transform mask array into 0, 1, 2, 3 for back ground, artery, vein and uncertain
+        mask_array1_new[:, :][np.logical_and(mask_array1[:, :, 0] == 0.0, mask_array1[:, :, 1] == 0.0, mask_array1[:, :, 2] == 0.0)] = 0
+        mask_array1_new[:, :][np.logical_and(mask_array1[:, :, 0] == 1, mask_array1[:, :, 1] == 0, mask_array1[:, :, 2] == 0)] = 1
+        mask_array1_new[:, :][np.logical_and(mask_array1[:, :, 0] == 0, mask_array1[:, :, 1] == 0, mask_array1[:, :, 2] == 1)] = 2
+        mask_array1_new[:, :][np.logical_and(mask_array1[:, :, 0] == 0, mask_array1[:, :, 1] == 1, mask_array1[:, :, 2] == 0)] = 3
+        mask_array1_new[:, :][np.logical_and(mask_array1[:, :, 0] == 1, mask_array1[:, :, 1] == 1, mask_array1[:, :, 2] == 1)] = 3
+
+        k += 1
+
+        print(np.unique(mask_array1_new))
+
+        # mask_array1_new_temp = mask_array1_new[mask_array1_new == 1]
+        # print(np.shape(mask_array1_new_temp))
+
+        # print(len(mask_array1_new == 1))
+
+        # print(np.shape(mask_array1_new))
+
+        mask_array1 = mask_array1.transpose((2, 0, 1))
+        # mask_array1 = np.where(mask_array1 > 0.5, 1, 0)
+
+        mask_array2 = mask_array2.transpose((2, 0, 1))
+        # mask_array2 = np.where(mask_array2 > 0.5, 1, 0)
+
+
+
+        return img_array, mask_array1_new, mask_array2
 
     def __getitem__(self, index):
 
@@ -166,30 +283,30 @@ class MultiTaskDataset(Dataset):
 
         mask_main = Image.open(all_labels_main[index])
         mask_auxilary = Image.open(all_labels_auxilary[index])
-
         img = Image.open(all_images[index])
 
         # assert img.size == mask_main.size, \
         #     f'Image and mask {idx} should be the same size, but are {img.size} and {mask_main.size}'
 
-        seed = np.random.randint(2147483647)
-        random.seed(seed)
-        torch.cuda.manual_seed(seed)
-
+        # seed = np.random.randint(2147483647)
+        # random.seed(seed)
+        # torch.cuda.manual_seed(seed)
+        #
+        # if self.transform:
+        #     img = self.transform(img)
+        #
+        # # random.seed(seed)  # apply this seed to target tranfsorms
+        # # torch.cuda.manual_seed(seed)  # needed for torchvision 0.7
+        #
+        # if self.transform:
+        #     mask_main = self.transform(mask_main)
+        #     mask_auxilary = self.transform(mask_auxilary)
+        #
+        # img = self.preprocess(img, self.img_size)
+        # mask_main = self.preprocess(mask_main, self.img_size)
+        # mask_auxilary = self.preprocess(mask_auxilary, self.img_size)
         if self.transform:
-            img = self.transform(img)
-
-        random.seed(seed)  # apply this seed to target tranfsorms
-        torch.cuda.manual_seed(seed)  # needed for torchvision 0.7
-
-        if self.transform:
-            mask_main = self.transform(mask_main)
-            mask_auxilary = self.transform(mask_auxilary)
-
-        img = self.preprocess(img, self.img_size)
-        mask_main = self.preprocess(mask_main, self.img_size)
-        mask_auxilary = self.preprocess(mask_auxilary, self.img_size)
-
+            img, mask_main, mask_auxilary = self.preprocess(img, mask_main, mask_auxilary, self.img_size, self.train_or, index)
         # print('the range of img is: ',np.unique(img))
         # print('the range of mask is: ',np.unique(mask))
         '''
@@ -420,6 +537,12 @@ def trainSingleModel(model,
                 images = batch_current['image']
                 labels_main = batch_current['mask_main']
                 labels_auxilary = batch_current['mask_auxilary']
+
+                # print(np.unique(labels_main))
+                # print(np.unique(labels_auxilary))
+
+                # print(np.shape(labels_main))
+                # print(np.shape(labels_auxilary))
 
                 images = images.to(device=device, dtype=torch.float32)
                 labels_main = labels_main.to(device=device, dtype=torch.float32)

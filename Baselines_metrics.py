@@ -646,9 +646,9 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
                 true_masks_cpu = true_masks_cpu.transpose((1, 2, 0))
                 mask_pred_sigmoid_cpu = mask_pred_sigmoid_cpu.transpose((1, 2, 0))
 
-                # binarys_in_mask_vessel = threshold_by_otsu(mask_pred_sigmoid_cpu)
+                binarys_in_mask_vessel = threshold_by_otsu(mask_pred_sigmoid_cpu)
 
-                binarys_in_mask_vessel = mask_pred_sigmoid_cpu > 0.5
+                # binarys_in_mask_vessel = (mask_pred_sigmoid_cpu > 0.5).float()
 
                 # encoded_pred = np.zeros(binarys_in_mask_vessel.shape[1:2], dtype=int)
                 encoded_pred = np.zeros(binarys_in_mask_vessel.shape[0:2], dtype=int)
