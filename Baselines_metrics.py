@@ -12,7 +12,7 @@ from PIL import Image
 from scipy.ndimage.morphology import distance_transform_edt, binary_erosion, generate_binary_structure
 
 from eval import pad_imgs, dice_coeff, AUC_PR, AUC_ROC, threshold_by_otsu, pixel_values_in_mask, misc_measures
-from sklearn.metrics import auc, confusion_matrix, roc_auc_score, precision_recall_curve
+from sklearn.metrics import auc, confusion_matrix, roc_auc_score, precision_recall_curve, balanced_accuracy_score, accuracy_score
 from scipy import ndimage
 # good references:
 # https://github.com/meetshah1995/pytorch-semseg/blob/master/ptsemseg/metrics.py
@@ -23,6 +23,61 @@ from scipy import ndimage
 # https://github.com/meetshah1995/pytorch-semseg/blob/master/ptsemseg/metrics.py
 #-----------------------------------------------
 
+
+def intersectionAndUnion(imLab, imPred, numClass):
+
+    # imPred, imLab = preprocessing_accuracy(imLab, imPred, numClass)
+
+    #print(np.unique(imPred))
+    #print(np.unique(imLab))
+
+    # imPred = np.asarray(imPred).copy()
+    # imLab = np.asarray(imLab).copy()
+
+    imPred += 1
+    imLab += 1
+    # Remove classes from unlabeled pixels in gt image.
+    # We should not penalize detections in unlabeled portions of the image.
+    imPred = imPred * (imLab > 0)
+
+    accuracy = accuracy_score(imLab.flatten(), imPred.flatten())
+
+    # Compute area intersection:
+    intersection = imPred * (imPred == imLab)
+    (area_intersection, _) = np.histogram(intersection, bins=numClass, range=(1, numClass))
+
+    # Compute area union:
+    (area_pred, _) = np.histogram(imPred, bins=numClass, range=(1, numClass))
+    (area_lab, _) = np.histogram(imLab, bins=numClass, range=(1, numClass))
+    area_union = area_pred + area_lab - area_intersection
+
+    iou_metric = area_intersection / area_union
+
+    return iou_metric.mean(), accuracy
+
+
+def f1_score(label_gt, label_pred, n_class):
+    # threhold = torch.Tensor([0])
+
+    # label_pred, label_gt = preprocessing_accuracy(label_gt, label_pred, n_class)
+
+    assert len(label_gt) == len(label_pred)
+
+    # precision = np.zeros(n_class, dtype=np.float32)
+    # recall = np.zeros(n_class, dtype=np.float32)
+
+    img_A = np.array(label_gt, dtype=np.float32).flatten()
+    img_B = np.array(label_pred, dtype=np.float32).flatten()
+
+    # precision[:] = precision_score(img_A, img_B, average='macro', labels=range(n_class))
+    # recall[:] = recall_score(img_A, img_B, average='macro', labels=range(n_class))
+    #
+    precision = precision_score(img_A, img_B, average='macro')
+    recall = recall_score(img_A, img_B, average='macro')
+    #
+    f1_metric = 2 * (recall * precision) / (recall + precision + 1e-8)
+    #
+    return f1_metric.mean(), recall.mean(), precision.mean()
 
 # def iou_metric(outputs, labels):
 #     # ========================================================================================================
@@ -62,105 +117,106 @@ def preprocessing_accuracy(label_true, label_pred, n_class):
     label_true = label_true.cpu().detach()
     label_pred = np.asarray(label_pred, dtype='int32')
     label_true = np.asarray(label_true, dtype='int32')
-    #
+
     return label_pred, label_true
-
-# https://github.com/wkentaro/pytorch-fcn/blob/master/torchfcn/utils.py
-# https://github.com/ozan-oktay/Attention-Gated-Networks/blob/master/utils/metrics.py
-# https://github.com/meetshah1995/pytorch-semseg/blob/master/ptsemseg/metrics.py
-
-
-def _fast_hist(label_true, label_pred, n_class):
-    label_pred, label_true = preprocessing_accuracy(label_true, label_pred, n_class)
-    mask = (label_true >= 0) & (label_true < n_class)
-    hist = np.bincount(
-        n_class * label_true[mask].astype(int) +
-        label_pred[mask], minlength=n_class**2).reshape(n_class, n_class)
-    return hist
+#
+# # https://github.com/wkentaro/pytorch-fcn/blob/master/torchfcn/utils.py
+# # https://github.com/ozan-oktay/Attention-Gated-Networks/blob/master/utils/metrics.py
+# # https://github.com/meetshah1995/pytorch-semseg/blob/master/ptsemseg/metrics.py
+#
 
 
-def segmentation_scores(label_trues, label_preds, n_class):
-    """Returns accuracy score evaluation result.
-      - overall accuracy
-      - mean accuracy
-      - mean IU
-      - fwavacc
-    """
-    # label_preds, label_trues = preprocessing_accuracy(label_trues, label_preds, n_class)
-    hist = np.zeros((n_class, n_class))
-    for lt, lp in zip(label_trues, label_preds):
-        hist += _fast_hist(lt.flatten(), lp.flatten(), n_class)
-    acc = np.diag(hist).sum() / hist.sum()
-    acc_cls = np.diag(hist) / hist.sum(axis=1)
-    acc_cls = np.nanmean(acc_cls)
-    # iou:
-    # iu = np.diag(hist) / (hist.sum(axis=1) + hist.sum(axis=0) - np.diag(hist) + 1e-10)
-    iu = 2 * np.diag(hist) / (hist.sum(axis=1) + hist.sum(axis=0) + 1e-8)
-    mean_dice = np.nanmean(iu)
-    # freq = hist.sum(axis=1) / hist.sum()
-    # fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
-    # iflat = label_preds.view(-1)
-    # tflat = label_trues.view(-1)
-    # intersection = (iflat * tflat).sum()
-    # union = iflat.sum() + tflat.sum()
-    #
-    # dice_score = (2. * intersection) / union
-    #
-    return mean_dice
+# def _fast_hist(label_true, label_pred, n_class):
+#     label_pred, label_true = preprocessing_accuracy(label_true, label_pred, n_class)
+#     mask = (label_true >= 0) & (label_true < n_class)
+#     hist = np.bincount(
+#         n_class * label_true[mask].astype(int) +
+#         label_pred[mask], minlength=n_class**2).reshape(n_class, n_class)
+#     return hist
+# #
+# #
+# def segmentation_scores(label_trues, label_preds, n_class):
+#     """Returns accuracy score evaluation result.
+#       - overall accuracy
+#       - mean accuracy
+#       - mean IU
+#       - fwavacc
+#     """
+#     # label_preds, label_trues = preprocessing_accuracy(label_trues, label_preds, n_class)
+#     hist = np.zeros((n_class, n_class))
+#     for lt, lp in zip(label_trues, label_preds):
+#         hist += _fast_hist(lt.flatten(), lp.flatten(), n_class)
+#     acc = np.diag(hist).sum() / hist.sum()
+#     acc_cls = np.diag(hist) / hist.sum(axis=1)
+#     acc_cls = np.nanmean(acc_cls)
+#     # iou:
+#     iu = np.diag(hist) / (hist.sum(axis=1) + hist.sum(axis=0) - np.diag(hist) + 1e-10)
+#     # iu = 2 * np.diag(hist) / (hist.sum(axis=1) + hist.sum(axis=0) + 1e-8)
+#     mean_iou = np.nanmean(iu)
+#     freq = hist.sum(axis=1) / hist.sum()
+#     fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
+#     # iflat = label_preds.view(-1)
+#     # tflat = label_trues.view(-1)
+#     # intersection = (iflat * tflat).sum()
+#     # union = iflat.sum() + tflat.sum()
+#     #
+#     # dice_score = (2. * intersection) / union
+#     #
+#     return fwavacc, acc_cls
 # ==================================================================================
 
 
-def f1_score(label_gt, label_pred, n_class):
-    # threhold = torch.Tensor([0])
-    label_pred, label_gt = preprocessing_accuracy(label_gt, label_pred, n_class)
-    #
-    if len(label_gt.shape) == 4:
-        b, c, h, w = label_gt.shape
-        size = b * c
-    elif len(label_gt.shape) == 3:
-        c, h, w = label_gt.shape
-        size = c
-    #
-    assert len(label_gt) == len(label_pred)
-    #
-    precision = np.zeros(n_class, dtype=np.float32)
-    recall = np.zeros(n_class, dtype=np.float32)
-    img_A = np.array(label_gt, dtype=np.float32).flatten()
-    img_B = np.array(label_pred, dtype=np.float32).flatten()
-    precision[:] = precision_score(img_A, img_B, average=None, labels=range(n_class))
-    recall[:] = recall_score(img_A, img_B, average=None, labels=range(n_class))
-    f1_metric = 2 * (recall * precision) / (recall + precision + 1e-10)
-    # For binary:
-    #
-    # CM = confusion_matrix(img_A, img_B)
-    # #
-    # TN = CM[0][0]
-    # FN = CM[1][0]
-    # TP = CM[1][1]
-    # FP = CM[0][1]
-    #
-    TN, FP, FN, TP = confusion_matrix(img_A, img_B, labels=[0.0, 1.0]).ravel()
-    #
-    # TP = np.sum(label_gt[label_gt == 1.0] == label_pred[label_pred == 1.0])
-    # TN = np.sum(label_gt[label_gt == 0.0] == label_pred[label_pred == 0.0])
-    # FP = np.sum(label_gt[label_gt == 1.0] == label_pred[label_pred == 0.0])
-    # FN = np.sum(label_gt[label_gt == 0.0] == label_pred[label_pred == 1.0])
-    # For multi-class:
-    # FP = CM.sum(axis=0) - np.diag(CM)
-    # FN = CM.sum(axis=1) - np.diag(CM)
-    # TP = np.diag(CM)
-    # TN = CM.sum() - (FP + FN + TP)
-    # FPs_Ns = (FP + 1e-8) / ((img_A == float(0.0)).sum() + 1e-8)
-    # FNs_Ps = (FN + 1e-8) / ((img_A == float(1.0)).sum() + 1e-8)
-    #
-    N = TN + FP
-    P = TP + FN
-    #
-    # FPs_Ns = (FP + 1e-10) / (Negatives + 1e-10)
-    # FNs_Ps = (FN + 1e-10) / (Positives + 1e-10)
-    # CM = np.zeros((2, 2), dtype=np.float32)
-    #
-    return f1_metric.mean(), recall.mean(), precision.mean(), TP / size, TN / size, FP / size, FN / size, P / size, N / size
+# def f1_score(label_gt, label_pred, n_class):
+#     # threhold = torch.Tensor([0])
+#     label_pred, label_gt = preprocessing_accuracy(label_gt, label_pred, n_class)
+#     #
+#     if len(label_gt.shape) == 4:
+#         b, c, h, w = label_gt.shape
+#         size = b * c
+#     elif len(label_gt.shape) == 3:
+#         c, h, w = label_gt.shape
+#         size = c
+#     #
+#     assert len(label_gt) == len(label_pred)
+#     #
+#     precision = np.zeros(n_class, dtype=np.float32)
+#     recall = np.zeros(n_class, dtype=np.float32)
+#     img_A = np.array(label_gt, dtype=np.float32).flatten()
+#     img_B = np.array(label_pred, dtype=np.float32).flatten()
+#     precision[:] = precision_score(img_A, img_B, average=None, labels=range(n_class))
+#     recall[:] = recall_score(img_A, img_B, average=None, labels=range(n_class))
+#     f1_metric = 2 * (recall * precision) / (recall + precision + 1e-10)
+#     # For binary:
+#     #
+#     # CM = confusion_matrix(img_A, img_B)
+#     # #
+#     # TN = CM[0][0]
+#     # FN = CM[1][0]
+#     # TP = CM[1][1]
+#     # FP = CM[0][1]
+#     #
+#     TN, FP, FN, TP = confusion_matrix(img_A, img_B, labels=[0.0, 1.0]).ravel()
+#     #
+#     # TP = np.sum(label_gt[label_gt == 1.0] == label_pred[label_pred == 1.0])
+#     # TN = np.sum(label_gt[label_gt == 0.0] == label_pred[label_pred == 0.0])
+#     # FP = np.sum(label_gt[label_gt == 1.0] == label_pred[label_pred == 0.0])
+#     # FN = np.sum(label_gt[label_gt == 0.0] == label_pred[label_pred == 1.0])
+#     # For multi-class:
+#     # FP = CM.sum(axis=0) - np.diag(CM)
+#     # FN = CM.sum(axis=1) - np.diag(CM)
+#     # TP = np.diag(CM)
+#     # TN = CM.sum() - (FP + FN + TP)
+#     # FPs_Ns = (FP + 1e-8) / ((img_A == float(0.0)).sum() + 1e-8)
+#     # FNs_Ps = (FN + 1e-8) / ((img_A == float(1.0)).sum() + 1e-8)
+#     #
+#     N = TN + FP
+#     P = TP + FN
+#     #
+#     # FPs_Ns = (FP + 1e-10) / (Negatives + 1e-10)
+#     # FNs_Ps = (FN + 1e-10) / (Positives + 1e-10)
+#     # CM = np.zeros((2, 2), dtype=np.float32)
+#     #
+#     return f1_metric.mean(), recall.mean(), precision.mean(), TP / size, TN / size, FP / size, FN / size, P / size, N / size
 
 ##==========================================================================================
 
@@ -467,52 +523,115 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
     module_pad_2 = np.expand_dims(module_pad_1, axis=0)
     module_pad = np.concatenate((module_pad_2, module_pad_2, module_pad_2), axis=0)
 
+    precision_eva = 0
+    recall_eva = 0
+    accuracy_eva = 0
+    iou_eva = 0
+    f1_eva = 0
+
     # with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
-    for batch in loader:
+    for n, batch in enumerate(loader):
 
         # imgs, true_masks = batch['image'], batch['mask']
         # imgs = imgs.to(device=device, dtype=torch.float32)
         # true_masks = true_masks.to(device=device, dtype=mask_type)
 
+        # if 'MTSARVSnet' in model_name:
+        #
+        #     imgs, true_masks_main, true_masks_auxilary = batch['image'], batch['mask_main'], batch['mask_auxilary']
+        #     imgs = imgs.to(device=device, dtype=torch.float32)
+        #     true_masks = true_masks_main.to(device=device, dtype=torch.float32)
+        #
+        # else:
+
+        imgs, true_masks_main, true_masks_auxilary = batch['image'], batch['mask_main'], batch['mask_auxilary']
+        imgs = imgs.to(device=device, dtype=torch.float32)
+        true_masks = true_masks_main.to(device=device, dtype=torch.float32)
+
+        # masks_pred_G = net_a(imgs)
+        # masks_pred_G_sigmoid_A = torch.sigmoid(masks_pred_G)
+        #
+        # masks_pred_G = net_v(imgs)
+        # masks_pred_G_sigmoid_V = torch.sigmoid(masks_pred_G)
+        #
+        # masks_pred_G_sigmoid_A_part = masks_pred_G_sigmoid_A.detach()
+        # masks_pred_G_sigmoid_V_part = masks_pred_G_sigmoid_V.detach()
+
+        # mask_pred, _, _, _ = net(imgs, masks_pred_G_sigmoid_A_part, masks_pred_G_sigmoid_V_part)
+
         if 'MTSARVSnet' in model_name:
 
-            imgs, true_masks_main, true_masks_auxilary = batch['image'], batch['mask_main'], batch['mask_auxilary']
-            imgs = imgs.to(device=device, dtype=torch.float32)
-            true_masks = true_masks_main.to(device=device, dtype=torch.float32)
+            mask_pred, side_output1, side_output2, side_output3, output_v, side_output1_v, side_output2_v, side_output3_v = net(imgs)
 
         else:
 
-            imgs, true_masks = batch['image'], batch['mask']
-            imgs = imgs.to(device=device, dtype=torch.float32)
-            true_masks = true_masks.to(device=device, dtype=torch.float32)
+            mask_pred = net(imgs)
 
-        with torch.no_grad():
+        # mask_pred_artery = mask_pred[:, 0, :, :]
+        # mask_pred_uncer = mask_pred[:, 1, :, :]
+        # mask_pred_vein = mask_pred[:, 2, :, :]
+        #
+        # true_masks_artery = true_masks[:, 0, :, :]
+        # true_masks_uncer = true_masks[:, 1, :, :]
+        # true_masks_vein = true_masks[:, 2, :, :]
 
-            # masks_pred_G = net_a(imgs)
-            # masks_pred_G_sigmoid_A = torch.sigmoid(masks_pred_G)
-            #
-            # masks_pred_G = net_v(imgs)
-            # masks_pred_G_sigmoid_V = torch.sigmoid(masks_pred_G)
-            #
-            # masks_pred_G_sigmoid_A_part = masks_pred_G_sigmoid_A.detach()
-            # masks_pred_G_sigmoid_V_part = masks_pred_G_sigmoid_V.detach()
+        # print(mask_pred.size())
 
-            # mask_pred, _, _, _ = net(imgs, masks_pred_G_sigmoid_A_part, masks_pred_G_sigmoid_V_part)
+        _, prediction = torch.max(mask_pred, dim=1)
+        prediction = prediction.float()
 
-            if 'MTSARVSnet' in model_name:
+        if n == 0:
 
-                mask_pred, side_output1, side_output2, side_output3, output_v, side_output1_v, side_output2_v, side_output3_v = net(imgs)
+            prediction_unique, prediction_counts = np.unique(prediction.cpu().detach().numpy(), return_counts=True)
+            mask_unique, mask_counts = np.unique(true_masks.cpu().detach().numpy(), return_counts=True)
 
-            else:
+            print(np.asarray((prediction_unique, prediction_counts)).T)
+            print(np.asarray((mask_unique, mask_counts)).T)
 
-                mask_pred = net(imgs)
+        prediction = prediction.cpu().detach()
+        prediction = np.asarray(prediction, dtype='uint8').squeeze()
 
-            mask_pred_artery = mask_pred[:, 0, :, :]
-            mask_pred_uncer = mask_pred[:, 1, :, :]
-            mask_pred_vein = mask_pred[:, 2, :, :]
-            true_masks_artery = true_masks[:, 0, :, :]
-            true_masks_uncer = true_masks[:, 1, :, :]
-            true_masks_vein = true_masks[:, 2, :, :]
+        true_masks = true_masks.cpu().detach()
+        true_masks = np.asarray(true_masks, dtype='uint8').squeeze()
+
+        # print(np.shape(prediction))
+        # print(np.shape(true_masks))
+
+        h, w = np.shape(prediction)
+
+        # print(h)
+
+        # artery:
+        prediction_artery = np.zeros([h, w], dtype=np.int8)
+        mask_artery = np.zeros([h, w], dtype=np.int8)
+        prediction_artery[prediction == 1] = 1
+        mask_artery[true_masks == 1] = 1
+        # vein
+        prediction_vein = np.zeros([h, w], dtype=np.int8)
+        mask_vein = np.zeros([h, w], dtype=np.int8)
+        prediction_vein[prediction == 2] = 1
+        mask_vein[true_masks == 2] = 1
+
+        # print(np.unique(prediction_artery))
+        # print(np.unique(mask_artery))
+
+        f1_artery, recall_artery, precision_artery = f1_score(label_gt=mask_artery, label_pred=prediction_artery, n_class=2)
+        iou_artery, acc_artery = intersectionAndUnion(imLab=mask_artery, imPred=prediction_artery, numClass=2)
+
+        f1_vein, recall_vein, precision_vein = f1_score(label_gt=mask_vein, label_pred=prediction_vein, n_class=2)
+        iou_vein, acc_vein = intersectionAndUnion(imLab=mask_vein, imPred=prediction_vein, numClass=2)
+
+        f1_ = (f1_artery + f1_vein) / 2
+        recall_ = (recall_artery + recall_vein) / 2
+        precision_ = (precision_artery + precision_vein) / 2
+        iou_ = (iou_artery + iou_vein) / 2
+        acc_ = (acc_artery + acc_vein) / 2
+
+        f1_eva += f1_
+        recall_eva += recall_
+        precision_eva += precision_
+        iou_eva += iou_
+        accuracy_eva += acc_
 
             ##################sigmoid or softmax
         '''
@@ -524,183 +643,88 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
         # else:
         # pred = torch.sigmoid(mask_pred)
         
-        pred = (mask_pred > 0.5).float()
-        tot += dice_coeff(pred, true_masks).item()
+        # pred = (mask_pred > 0.5).float()
+        # tot += dice_coeff(prediction, true_masks).item()
 
-        if mask:
-
-            if mode == 'whole':
-                ########################################
-
-                # based on the whole images
-
-                ########################################
-
-                # mask_pred_sigmoid = torch.sigmoid(mask_pred)
-                mask_pred_sigmoid = mask_pred
-                '''
-                mask_pred_sigmoid_cpu = mask_pred_sigmoid.detach().cpu().numpy().flatten()
-                true_masks_cpu = true_masks.detach().cpu().numpy().flatten()
-                '''
-                mask_pred_sigmoid_cpu = mask_pred_sigmoid.detach().cpu().numpy()
-                true_masks_cpu = true_masks.detach().cpu().numpy()
-
-                vessels_in_mask, generated_in_mask = pixel_values_in_mask(true_masks_cpu, mask_pred_sigmoid_cpu, module_pad)
-
-                auc_roc = AUC_ROC(vessels_in_mask, generated_in_mask)
-                auc_pr = AUC_PR(vessels_in_mask, generated_in_mask)
-
-                binarys_in_mask = threshold_by_otsu(generated_in_mask)
-
-                acc, sensitivity, specificity, precision, G, F1_score = misc_measures(vessels_in_mask, binarys_in_mask)
-
-            if mode == 'artery':
-                ######################################
-
-                # based on the artery
-
-                ########################################
-
-                # mask_pred_artery_sigmoid = torch.sigmoid(mask_pred_artery)
-
-                mask_pred_artery_sigmoid = mask_pred
-
-                mask_pred_artery_sigmoid_cpu = mask_pred_artery_sigmoid.detach().cpu().numpy()
-
-                true_masks_artery_cpu = true_masks_artery.detach().cpu().numpy()
-
-                vessels_in_mask_artery, generated_in_mask_artery = pixel_values_in_mask(true_masks_artery_cpu, mask_pred_artery_sigmoid_cpu, module_pad_1)
-
-                auc_roc = AUC_ROC(vessels_in_mask_artery, generated_in_mask_artery)
-                auc_pr = AUC_PR(vessels_in_mask_artery, generated_in_mask_artery)
-
-                binarys_in_mask_artery = threshold_by_otsu(generated_in_mask_artery)
-
-                acc, sensitivity, specificity, precision, G, F1_score = misc_measures(vessels_in_mask_artery, binarys_in_mask_artery)
-
-            if mode == 'vein':
-                ######################################
-
-                # based on the vein
-
-                ########################################
-
-                # mask_pred_vein_sigmoid = torch.sigmoid(mask_pred_vein)
-
-                mask_pred_vein_sigmoid = mask_pred
-
-                mask_pred_vein_sigmoid_cpu = mask_pred_vein_sigmoid.detach().cpu().numpy()
-
-                true_masks_vein_cpu = true_masks_vein.detach().cpu().numpy()
-
-                vessels_in_mask_vein, generated_in_mask_vein = pixel_values_in_mask(true_masks_vein_cpu, mask_pred_vein_sigmoid_cpu, module_pad_1)
-
-                auc_roc = AUC_ROC(vessels_in_mask_vein, generated_in_mask_vein)
-                auc_pr = AUC_PR(vessels_in_mask_vein, generated_in_mask_vein)
-
-                binarys_in_mask_vein = threshold_by_otsu(generated_in_mask_vein)
-
-                acc, sensitivity, specificity, precision, G, F1_score = misc_measures(vessels_in_mask_vein, binarys_in_mask_vein)
-
-            if mode == 'uncertainty':
-                ######################################
-
-                # based on the uncertainty
-
-                ########################################
-
-                # mask_pred_uncer_sigmoid = torch.sigmoid(mask_pred_uncer)
-
-                mask_pred_uncer_sigmoid = mask_pred
-
-                mask_pred_uncer_sigmoid_cpu = mask_pred_uncer_sigmoid.detach().cpu().numpy()
-
-                true_masks_uncer_cpu = true_masks_uncer.detach().cpu().numpy()
-
-                vessels_in_mask_uncer, generated_in_mask_uncer = pixel_values_in_mask(true_masks_uncer_cpu, mask_pred_uncer_sigmoid_cpu, module_pad_1)
-
-                auc_roc = AUC_ROC(vessels_in_mask_uncer, generated_in_mask_uncer)
-                auc_pr = AUC_PR(vessels_in_mask_uncer, generated_in_mask_uncer)
-
-                binarys_in_mask_uncer = threshold_by_otsu(generated_in_mask_uncer)
-
-                acc, sensitivity, specificity, precision, G, F1_score = misc_measures(vessels_in_mask_uncer, binarys_in_mask_uncer)
-
-            if mode == 'vessel':
-                ######################################
-
-                # based on the vessel
-
-                ########################################
-
-                # mask_pred_sigmoid = torch.sigmoid(mask_pred)
-
-                mask_pred_sigmoid = mask_pred
-
-                mask_pred_sigmoid_cpu = mask_pred_sigmoid.detach().cpu().numpy()
-                mask_pred_sigmoid_cpu = np.squeeze(mask_pred_sigmoid_cpu)
-
-                true_masks_cpu = true_masks.detach().cpu().numpy()
-                true_masks_cpu = np.squeeze(true_masks_cpu)
-
-                true_masks_cpu = true_masks_cpu.transpose((1, 2, 0))
-                mask_pred_sigmoid_cpu = mask_pred_sigmoid_cpu.transpose((1, 2, 0))
-
-                binarys_in_mask_vessel = threshold_by_otsu(mask_pred_sigmoid_cpu)
-
-                # binarys_in_mask_vessel = (mask_pred_sigmoid_cpu > 0.5).float()
-
-                # encoded_pred = np.zeros(binarys_in_mask_vessel.shape[1:2], dtype=int)
-                encoded_pred = np.zeros(binarys_in_mask_vessel.shape[0:2], dtype=int)
-                # print(np.shape(encoded_pred))
-                # print(np.shape(true_masks_cpu))
-                # print(np.unique(true_masks_cpu))
-                encoded_gt = np.zeros(true_masks_cpu.shape[0:2], dtype=int)
-
-                # convert white pixels to green pixels (which are ignored)
-                white_ind = np.where(np.logical_and(true_masks_cpu[:, :, 0] == 1, true_masks_cpu[:, :, 1] == 1, true_masks_cpu[:, :, 2] == 1))
-                # print('white, ',np.shape(white_ind))
-
-                # print(type(white_ind))
-
-                if white_ind[0].size != 0:
-                    # print(np.shape(true_masks_cpu))
-
-                    # true_masks_cpu[:,white_ind[0],white_ind[1]] = [0,1,0]
-                    true_masks_cpu[white_ind] = [0, 1, 0]
-                    # true_masks_cpu = [0,1,0]
-
-                white_ind_pre = np.where(np.logical_and(binarys_in_mask_vessel[:, :, 0] == 1, binarys_in_mask_vessel[:, :, 1] == 1, binarys_in_mask_vessel[:, :, 2] == 1))
-                if white_ind_pre[0].size != 0:
-                    binarys_in_mask_vessel[white_ind_pre] = [0, 1, 0]
-
-                # translate the images to arrays suited for sklearn metrics
-                arteriole = np.where(np.logical_and(true_masks_cpu[:, :, 0] == 1, true_masks_cpu[:, :, 1] == 0));
-                encoded_gt[arteriole] = 1
-                venule = np.where(np.logical_and(true_masks_cpu[:, :, 2] == 1, true_masks_cpu[:, :, 1] == 0));
-                encoded_gt[venule] = 2
-                # uncertainty = np.where(np.logical_and(true_masks_cpu[:,:,1] == 1, true_masks_cpu[:,:, 0] == 0, true_masks_cpu[:,:, 2] == 0)); encoded_gt[uncertainty] = 3
-                arteriole = np.where(np.logical_and(binarys_in_mask_vessel[:, :, 0] == 1, binarys_in_mask_vessel[:, :, 1] == 0));
-                encoded_pred[arteriole] = 1
-                venule = np.where(np.logical_and(binarys_in_mask_vessel[:, :, 2] == 1, binarys_in_mask_vessel[:, :, 1] == 0));
-                encoded_pred[venule] = 2
-                # uncertainty = np.where(np.logical_and(binarys_in_mask_vessel[:,:,1] == 1,binarys_in_mask_vessel[:,:, 0] == 0, binarys_in_mask_vessel[:,:, 2] == 0)); encoded_pred[uncertainty] = 3
-                vessel_point = np.where(np.logical_and(encoded_gt[:, :] > 0, encoded_pred[:, :] > 0))
-
-                encoded_pred_vessel_point = encoded_pred[vessel_point].flatten()
-                # print('encoded_pred_vessel_point range is:',np.unique(encoded_pred_vessel_point))
-                # print('encoded_pred_vessel_point shape is:',np.shape(encoded_pred_vessel_point))
-                encoded_gt_vessel_point = encoded_gt[vessel_point].flatten()
-
-                acc_ve, sensitivity_ve, specificity_ve, precision_ve, G_ve, F1_score_ve = misc_measures(encoded_gt_vessel_point, encoded_pred_vessel_point)
+        # if mask:
+        #
+        #     if mode == 'vessel':
+        #         ######################################
+        #
+        #         # based on the vessel
+        #
+        #         ########################################
+        #
+        #         # mask_pred_sigmoid = torch.sigmoid(mask_pred)
+        #
+        #         mask_pred_sigmoid = mask_pred
+        #
+        #         mask_pred_sigmoid_cpu = mask_pred_sigmoid.detach().cpu().numpy()
+        #         mask_pred_sigmoid_cpu = np.squeeze(mask_pred_sigmoid_cpu)
+        #
+        #         true_masks_cpu = true_masks.detach().cpu().numpy()
+        #         true_masks_cpu = np.squeeze(true_masks_cpu)
+        #
+        #         true_masks_cpu = true_masks_cpu.transpose((1, 2, 0))
+        #         mask_pred_sigmoid_cpu = mask_pred_sigmoid_cpu.transpose((1, 2, 0))
+        #
+        #         binarys_in_mask_vessel = threshold_by_otsu(mask_pred_sigmoid_cpu)
+        #
+        #         # binarys_in_mask_vessel = (mask_pred_sigmoid_cpu > 0.5).float()
+        #
+        #         # encoded_pred = np.zeros(binarys_in_mask_vessel.shape[1:2], dtype=int)
+        #         encoded_pred = np.zeros(binarys_in_mask_vessel.shape[0:2], dtype=int)
+        #         # print(np.shape(encoded_pred))
+        #         # print(np.shape(true_masks_cpu))
+        #         # print(np.unique(true_masks_cpu))
+        #         encoded_gt = np.zeros(true_masks_cpu.shape[0:2], dtype=int)
+        #
+        #         # convert white pixels to green pixels (which are ignored)
+        #         white_ind = np.where(np.logical_and(true_masks_cpu[:, :, 0] == 1, true_masks_cpu[:, :, 1] == 1, true_masks_cpu[:, :, 2] == 1))
+        #         # print('white, ',np.shape(white_ind))
+        #
+        #         # print(type(white_ind))
+        #
+        #         if white_ind[0].size != 0:
+        #             # print(np.shape(true_masks_cpu))
+        #
+        #             # true_masks_cpu[:,white_ind[0],white_ind[1]] = [0,1,0]
+        #             true_masks_cpu[white_ind] = [0, 1, 0]
+        #             # true_masks_cpu = [0,1,0]
+        #
+        #         white_ind_pre = np.where(np.logical_and(binarys_in_mask_vessel[:, :, 0] == 1, binarys_in_mask_vessel[:, :, 1] == 1, binarys_in_mask_vessel[:, :, 2] == 1))
+        #         if white_ind_pre[0].size != 0:
+        #             binarys_in_mask_vessel[white_ind_pre] = [0, 1, 0]
+        #
+        #         # translate the images to arrays suited for sklearn metrics
+        #         arteriole = np.where(np.logical_and(true_masks_cpu[:, :, 0] == 1, true_masks_cpu[:, :, 1] == 0));
+        #         encoded_gt[arteriole] = 1
+        #         venule = np.where(np.logical_and(true_masks_cpu[:, :, 2] == 1, true_masks_cpu[:, :, 1] == 0));
+        #         encoded_gt[venule] = 2
+        #         # uncertainty = np.where(np.logical_and(true_masks_cpu[:,:,1] == 1, true_masks_cpu[:,:, 0] == 0, true_masks_cpu[:,:, 2] == 0)); encoded_gt[uncertainty] = 3
+        #         arteriole = np.where(np.logical_and(binarys_in_mask_vessel[:, :, 0] == 1, binarys_in_mask_vessel[:, :, 1] == 0));
+        #         encoded_pred[arteriole] = 1
+        #         venule = np.where(np.logical_and(binarys_in_mask_vessel[:, :, 2] == 1, binarys_in_mask_vessel[:, :, 1] == 0));
+        #         encoded_pred[venule] = 2
+        #         # uncertainty = np.where(np.logical_and(binarys_in_mask_vessel[:,:,1] == 1,binarys_in_mask_vessel[:,:, 0] == 0, binarys_in_mask_vessel[:,:, 2] == 0)); encoded_pred[uncertainty] = 3
+        #         vessel_point = np.where(np.logical_and(encoded_gt[:, :] > 0, encoded_pred[:, :] > 0))
+        #
+        #         encoded_pred_vessel_point = encoded_pred[vessel_point].flatten()
+        #         # print('encoded_pred_vessel_point range is:',np.unique(encoded_pred_vessel_point))
+        #         # print('encoded_pred_vessel_point shape is:',np.shape(encoded_pred_vessel_point))
+        #         encoded_gt_vessel_point = encoded_gt[vessel_point].flatten()
+        #
+        #         acc_ve, sensitivity_ve, specificity_ve, precision_ve, G_ve, F1_score_ve = misc_measures(encoded_gt_vessel_point, encoded_pred_vessel_point)
 
             # pbar.update()
 
     net.train()
 
-    if mode == 'vessel':
+    return accuracy_eva/(n+1), iou_eva/(n+1), precision_eva/(n+1), recall_eva/(n+1), f1_eva/(n+1)
 
-        return tot / n_val, acc_ve, sensitivity_ve, specificity_ve, precision_ve, G_ve, F1_score_ve
-
-    else:
-        return tot / n_val, acc, sensitivity, specificity, precision, G, F1_score, auc_roc, auc_pr
+    # if mode == 'vessel':
+    #
+    #     return tot / n_val, acc_ve, sensitivity_ve, specificity_ve, precision_ve, G_ve, F1_score_ve
+    #
+    # else:
+    #     return tot / n_val, acc, sensitivity, specificity, precision, G, F1_score, auc_roc, auc_pr
