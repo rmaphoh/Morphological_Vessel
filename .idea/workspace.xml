@@ -7,56 +7,72 @@
       <change beforePath="$PROJECT_DIR$/Baselines_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Baselines_models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Baselines_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/Baselines_run.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Baselines_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/Baselines_train.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/events.out.tfevents.1598396923.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/events.out.tfevents.1598398053.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/events.out.tfevents.1598447309.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/events.out.tfevents.1598447382.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/events.out.tfevents.1598559728.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/events.out.tfevents.1598559800.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/events.out.tfevents.1598560522.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/events.out.tfevents.1598560541.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV/events.out.tfevents.1598560621.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598561478.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598565794.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598567508.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598567531.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598567597.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598567610.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598568305.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598568776.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598569009.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598620350.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598620552.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598620641.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598620663.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598620775.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598620910.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598620954.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598621234.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598621293.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598621315.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598621404.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598621475.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.05_total_epoch_50_DRIVE_AV/events.out.tfevents.1598621518.NeuroBeast2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch11.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch12.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch13.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch14.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch15.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch16.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch17.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch18.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_current_epoch19.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/quantitative_results/test_result_mean.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/quantitative_results/test_result_std.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV/trained_models/MTSARVSnet__train_batch_1_repeat_1_lr_0.0001_total_epoch_20_DRIVE_AV_Final.pt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV_current_epoch11.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV_current_epoch12.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV_current_epoch13.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV_current_epoch14.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV_current_epoch15.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV_current_epoch16.pth" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DRIVE_AV/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.01_total_epoch_20_DRIVE_AV_current_epoch17.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Logs/Log_MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/events.out.tfevents.1598812838.NeuroBeast2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Logs/Log_Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/events.out.tfevents.1598809446.NeuroBeast2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch191.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch192.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch193.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch194.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch195.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch196.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch197.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch198.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch199.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_0.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_10.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_11.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_12.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_13.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_14.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_15.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_16.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_17.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_18.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_19.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_4.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_5.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_6.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_7.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_8.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_9.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/quantitative_results/test_result_mean.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/quantitative_results/test_result_std.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/trained_models/MTSARVSnet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_Final.pt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch191.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch192.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch193.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch194.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch195.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch196.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch197.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch198.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/CheckPoints/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_current_epoch199.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_0.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_10.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_11.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_12.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_13.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_14.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_15.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_16.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_17.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_18.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_19.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_4.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_5.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_6.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_7.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_8.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/Visual_results/seg_9.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/quantitative_results/test_result_mean.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/quantitative_results/test_result_std.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Results/DRIVE_AV/Retinal_20200824/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV/trained_models/Unet__train_batch_1_repeat_1_lr_0.001_total_epoch_200_DRIVE_AV_Final.pt" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -64,13 +80,35 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="DockManager">
+    <window id="1">
+      <content type="file-editors">
+        <state>
+          <leaf>
+            <file pinned="false" current-in-tab="true">
+              <entry file="file://$PROJECT_DIR$/eval.py">
+                <provider selected="true" editor-type-id="text-editor">
+                  <state relative-caret-position="600">
+                    <caret line="67" column="25" selection-start-line="67" selection-start-column="25" selection-end-line="67" selection-end-column="25" />
+                    <folding>
+                      <element signature="e#0#12#0" expanded="true" />
+                    </folding>
+                  </state>
+                </provider>
+              </entry>
+            </file>
+          </leaf>
+        </state>
+      </content>
+    </window>
+  </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Baselines_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="797">
-              <caret line="727" lean-forward="true" selection-start-line="727" selection-end-line="727" />
+            <state relative-caret-position="777">
+              <caret line="952" column="16" selection-start-line="952" selection-start-column="16" selection-end-line="952" selection-end-column="16" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -78,11 +116,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Baselines_run.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="315">
-              <caret line="21" column="31" lean-forward="true" selection-start-line="21" selection-start-column="31" selection-end-line="21" selection-end-column="31" />
+            <state relative-caret-position="396">
+              <caret line="27" column="39" selection-start-line="27" selection-start-column="39" selection-end-line="27" selection-end-column="39" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -93,17 +131,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Baselines_metrics.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="90">
-              <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Baselines_models.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="844">
-              <caret line="308" lean-forward="true" selection-start-line="308" selection-end-line="308" />
+            <state relative-caret-position="543">
+              <caret line="664" column="71" selection-start-line="664" selection-start-column="71" selection-end-line="664" selection-end-column="71" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -140,16 +169,17 @@
         <option value="$PROJECT_DIR$/dataset.py" />
         <option value="$PROJECT_DIR$/train.py" />
         <option value="$PROJECT_DIR$/eval.py" />
-        <option value="$PROJECT_DIR$/Baselines_metrics.py" />
-        <option value="$PROJECT_DIR$/Baselines_run.py" />
         <option value="$PROJECT_DIR$/Baselines_models.py" />
         <option value="$PROJECT_DIR$/Baselines_train.py" />
+        <option value="$PROJECT_DIR$/Baselines_metrics.py" />
+        <option value="$PROJECT_DIR$/Baselines_run.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="5">
+    <option name="x" value="995" />
     <option name="y" value="25" />
-    <option name="width" value="2560" />
+    <option name="width" value="1565" />
     <option name="height" value="1415" />
   </component>
   <component name="ProjectView">
@@ -157,6 +187,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -182,20 +213,14 @@
               <item name="DRIVE_AV" type="462c0819:PsiDirectoryNode" />
               <item name="test" type="462c0819:PsiDirectoryNode" />
             </path>
-            <path>
-              <item name="Morphological_Vessel" type="b2602c69:ProjectViewProjectNode" />
-              <item name="Morphological_Vessel" type="462c0819:PsiDirectoryNode" />
-              <item name="DRIVE_AV" type="462c0819:PsiDirectoryNode" />
-            </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../ERFNet" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RunDashboard">
@@ -247,15 +272,15 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="67" y="25" width="2493" height="1415" extended-state="6" />
+    <frame x="995" y="25" width="1565" height="1415" extended-state="4" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.09554656" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.21789883" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.9766719" />
+      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.44167963" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.55598754" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -424,16 +449,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/eval.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="104" column="38" selection-start-line="104" selection-start-column="38" selection-end-line="104" selection-end-column="38" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/eval_softmax.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2591">
@@ -444,10 +459,38 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/data/DRIVE_AV/test/mask/06_test_mask.gif">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/data/DRIVE_AV/test/mask/05_test_mask.gif">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/data/DRIVE_AV/test/mask/04_test_mask.gif">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/data/DRIVE_AV/test/mask/03_test_mask.gif">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/data/DRIVE_AV/test/mask/01_test_mask.gif">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/data/DRIVE_AV/test/mask/02_test_mask.gif">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/Baselines_models.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="844">
-          <caret line="308" lean-forward="true" selection-start-line="308" selection-end-line="308" />
+        <state relative-caret-position="15">
+          <caret line="345" column="9" lean-forward="true" selection-start-line="345" selection-start-column="9" selection-end-line="345" selection-end-column="9" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/eval.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="600">
+          <caret line="67" column="25" selection-start-line="67" selection-start-column="25" selection-end-line="67" selection-end-column="25" />
           <folding>
             <element signature="e#0#12#0" expanded="true" />
           </folding>
@@ -456,15 +499,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Baselines_metrics.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Baselines_run.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="21" column="31" lean-forward="true" selection-start-line="21" selection-start-column="31" selection-end-line="21" selection-end-column="31" />
+        <state relative-caret-position="543">
+          <caret line="664" column="71" selection-start-line="664" selection-start-column="71" selection-end-line="664" selection-end-column="71" />
           <folding>
             <element signature="e#0#12#0" expanded="true" />
           </folding>
@@ -473,10 +509,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Baselines_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="797">
-          <caret line="727" lean-forward="true" selection-start-line="727" selection-end-line="727" />
+        <state relative-caret-position="777">
+          <caret line="952" column="16" selection-start-line="952" selection-start-column="16" selection-end-line="952" selection-end-column="16" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Baselines_run.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="396">
+          <caret line="27" column="39" selection-start-line="27" selection-start-column="39" selection-end-line="27" selection-end-column="39" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
           </folding>
         </state>
       </provider>

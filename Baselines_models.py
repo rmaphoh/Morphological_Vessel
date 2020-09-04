@@ -308,6 +308,117 @@ class UNet(nn.Module):
         return y
 
 
+class DualAttUNet(nn.Module):
+    # Ref: https://link.springer.com/chapter/10.1007/978-3-030-32239-7_80
+    def __init__(self, in_ch, width, class_no):
+        #
+        super(DualAttUNet, self).__init__()
+        #
+        if class_no == 2:
+            #
+            self.final_in = 1
+            #
+        else:
+            #
+            self.final_in = class_no
+        #
+        self.w1 = width
+        self.w2 = width * 2
+        self.w3 = width * 4
+        self.w4 = width * 8
+        #
+        self.econv0 = single_conv(in_channels=in_ch, out_channels=self.w1, step=1)
+        self.econv1 = double_conv(in_channels=self.w1, out_channels=self.w2, step=2)
+        self.econv2 = double_conv(in_channels=self.w2, out_channels=self.w3, step=2)
+        self.econv3 = double_conv(in_channels=self.w3, out_channels=self.w4, step=2)
+        #
+        self.bridge_spatial1 = nn.Conv2d(self.w4, self.w1, 1, bias=False)
+        self.bridge_spatial1_q = single_conv(in_channels=self.w1, out_channels=self.w1, step=1)
+        self.bridge_spatial1_k = single_conv(in_channels=self.w1, out_channels=self.w1, step=1)
+        self.bridge_spatial2 = nn.Conv2d(self.w1, self.w4, 1, bias=False)
+        self.bridge_channel = nn.Conv2d(self.w4, self.w4, 1, bias=False)
+        # self.bridge = double_conv(in_channels=self.w4, out_channels=self.w4, step=1)
+        #
+        self.dconv3 = double_conv(in_channels=self.w4+self.w4, out_channels=self.w3, step=1)
+        self.dconv2 = double_conv(in_channels=self.w3+self.w3, out_channels=self.w2, step=1)
+        self.dconv1 = double_conv(in_channels=self.w2+self.w2, out_channels=self.w1, step=1)
+        self.dconv0 = double_conv(in_channels=self.w1+self.w1, out_channels=self.w1, step=1)
+        #
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.dconv_last = nn.Conv2d(self.w1, self.final_in, 1, bias=True)
+
+    def forward(self, x):
+
+        x0 = self.econv0(x)
+        x1 = self.econv1(x0)
+        x2 = self.econv2(x1)
+        x3 = self.econv3(x2)
+
+        x4_spatial = self.bridge_spatial1(x3)
+        x4_channel = self.bridge_channel(x3)
+
+        b, c, h, w = x4_spatial.size()
+
+        x4_spatial_q = self.bridge_spatial1_q(x4_spatial)
+        x4_spatial_q = torch.reshape(x4_spatial_q, (b, c, h*w)).permute(0, 2, 1).contiguous()
+
+        x4_spatial_k = self.bridge_spatial1_k(x4_spatial)
+        x4_spatial_k = torch.reshape(x4_spatial_k, (b, c, h*w))
+
+        x4_spatial_v = torch.reshape(x4_spatial, (b, c, h*w))
+
+        x4_spatial_attention = torch.bmm(x4_spatial_q, x4_spatial_k)
+
+        x4_spatial_attention = torch.softmax(x4_spatial_attention, dim=1)
+
+        x4_spatial_attention = torch.bmm(x4_spatial_v, x4_spatial_attention)
+
+        x4_spatial_attention = torch.reshape(x4_spatial_attention, (b, c, h, w))
+
+        x4_spatial_attention = self.bridge_spatial2(x4_spatial_attention)
+
+        b, c, h, w = x4_channel.size()
+
+        x4_channel_q = torch.reshape(x4_channel, (b, c, h*w)).permute(0, 2, 1).contiguous()
+
+        x4_channel_k = torch.reshape(x4_channel, (b, c, h*w))
+
+        x4_channel_v = torch.reshape(x4_channel, (b, c, h*w))
+
+        x4_channel_attention = torch.bmm(x4_channel_k, x4_channel_q)
+
+        x4_channel_attention = torch.softmax(x4_channel_attention, dim=1)
+
+        x4_channel_attention = torch.bmm(x4_channel_attention, x4_channel_v)
+
+        x4_channel_attention = torch.reshape(x4_channel_attention, (b, c, h, w))
+
+        x4 = x4_spatial_attention + x3 + x4_channel_attention
+
+        y = self.upsample(x4)
+
+        if y.size()[2] != x3.size()[2]:
+
+            diffY = torch.tensor([x3.size()[2] - y.size()[2]])
+            diffX = torch.tensor([x3.size()[3] - y.size()[3]])
+            #
+            y = F.pad(y, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
+
+        y3 = torch.cat([y, x3], dim=1)
+        y3 = self.dconv3(y3)
+        y2 = self.upsample(y3)
+        y2 = torch.cat([y2, x2], dim=1)
+        y2 = self.dconv2(y2)
+        y1 = self.upsample(y2)
+        y1 = torch.cat([y1, x1], dim=1)
+        y1 = self.dconv1(y1)
+        y0 = self.upsample(y1)
+        y0 = torch.cat([y0, x0], dim=1)
+        y0 = self.dconv0(y0)
+        y = self.dconv_last(y0)
+        return y
+
+
 def double_conv(in_channels, out_channels, step):
     #
     return nn.Sequential(

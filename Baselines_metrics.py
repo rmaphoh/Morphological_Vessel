@@ -12,7 +12,7 @@ from PIL import Image
 from scipy.ndimage.morphology import distance_transform_edt, binary_erosion, generate_binary_structure
 
 from eval import pad_imgs, dice_coeff, AUC_PR, AUC_ROC, threshold_by_otsu, pixel_values_in_mask, misc_measures
-from sklearn.metrics import auc, confusion_matrix, roc_auc_score, precision_recall_curve, balanced_accuracy_score, accuracy_score
+from sklearn.metrics import auc, confusion_matrix, roc_auc_score, precision_recall_curve, balanced_accuracy_score, mean_squared_error, accuracy_score
 from scipy import ndimage
 # good references:
 # https://github.com/meetshah1995/pytorch-semseg/blob/master/ptsemseg/metrics.py
@@ -529,6 +529,13 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
     iou_eva = 0
     f1_eva = 0
 
+    sensitivity_eva = 0
+    specificity_eva = 0
+    auc_roc_eva = 0
+    auc_pr_eva = 0
+    mse_eva = 0
+    g_eva = 0
+
     # with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
     for n, batch in enumerate(loader):
 
@@ -544,7 +551,7 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
         #
         # else:
 
-        imgs, true_masks_main, true_masks_auxilary = batch['image'], batch['mask_main'], batch['mask_auxilary']
+        imgs, true_masks_main, true_masks_auxilary, roi = batch['image'], batch['mask_main'], batch['mask_auxilary'], batch['roi']
         imgs = imgs.to(device=device, dtype=torch.float32)
         true_masks = true_masks_main.to(device=device, dtype=torch.float32)
 
@@ -615,24 +622,73 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
         # print(np.unique(prediction_artery))
         # print(np.unique(mask_artery))
 
-        f1_artery, recall_artery, precision_artery = f1_score(label_gt=mask_artery, label_pred=prediction_artery, n_class=2)
-        iou_artery, acc_artery = intersectionAndUnion(imLab=mask_artery, imPred=prediction_artery, numClass=2)
+        roi = roi.cpu().detach().numpy().squeeze()
 
-        f1_vein, recall_vein, precision_vein = f1_score(label_gt=mask_vein, label_pred=prediction_vein, n_class=2)
-        iou_vein, acc_vein = intersectionAndUnion(imLab=mask_vein, imPred=prediction_vein, numClass=2)
+        # print('ROI has values:')
+        # print(np.unique(roi))
+
+        # mask_artery[roi == 1.0] = mask_artery
+        # prediction_artery[roi == 1.0] = prediction_artery
+        #
+        # mask_vein[roi == 1.0] = mask_vein
+        # prediction_vein[roi == 1.0] = prediction_vein
+
+        # mask_artery = np.ma.masked_where(roi != 1.0, mask_artery.squeeze())
+        # prediction_artery = np.ma.masked_where(roi != 1.0, prediction_artery.squeeze())
+        # mask_vein = np.ma.masked_where(roi != 1.0, mask_vein.squeeze())
+        # prediction_vein = np.ma.masked_where(roi != 1.0, prediction_vein.squeeze())
+
+        roi_index = np.where(roi == 1.0)
+        mask_artery = mask_artery[roi_index]
+        mask_vein = mask_vein[roi_index]
+
+        prediction_artery = prediction_artery[roi_index]
+        prediction_vein = prediction_vein[roi_index]
+
+        # print(np.shape(mask_artery))
+
+        f1_artery, recall_artery, __ = f1_score(label_gt=mask_artery.flatten(), label_pred=prediction_artery.flatten(), n_class=2)
+        iou_artery, _ = intersectionAndUnion(imLab=mask_artery.flatten(), imPred=prediction_artery.flatten(), numClass=2)
+
+        f1_vein, recall_vein, __ = f1_score(label_gt=mask_vein.flatten(), label_pred=prediction_vein.flatten(), n_class=2)
+        iou_vein, _ = intersectionAndUnion(imLab=mask_vein.flatten(), imPred=prediction_vein.flatten(), numClass=2)
+
+        acc_artery, sensitivity_artery, specificity_artery, precision_artery, G_artery, ___ = misc_measures(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
+        acc_vein, sensitivity_vein, specificity_vein, precision_vein, G_vein, ___ = misc_measures(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
+
+        auc_roc_artery = AUC_ROC(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
+        auc_roc_vein = AUC_ROC(true_vessel_arr=mask_vein, pred_vessel_arr=prediction_vein)
+
+        auc_pr_artery = AUC_PR(true_vessel_img=mask_artery, pred_vessel_img=prediction_artery)
+        auc_pr_vein = AUC_PR(true_vessel_img=mask_vein, pred_vessel_img=prediction_vein)
+
+        mse_artery = mean_squared_error(mask_artery, prediction_artery)
+        mse_vein = mean_squared_error(mask_vein, prediction_vein)
 
         f1_ = (f1_artery + f1_vein) / 2
         recall_ = (recall_artery + recall_vein) / 2
         precision_ = (precision_artery + precision_vein) / 2
         iou_ = (iou_artery + iou_vein) / 2
         acc_ = (acc_artery + acc_vein) / 2
+        mse_ = (mse_artery + mse_vein) / 2
+
+        G_ = (G_artery + G_vein) / 2
+        specificity_ = (specificity_artery + specificity_vein) / 2
+        sensitivity_ = (sensitivity_artery + sensitivity_vein) / 2
+        auc_roc_ = (auc_roc_artery + auc_roc_vein) / 2
+        auc_pr_ = (auc_pr_artery + auc_pr_vein) / 2
 
         f1_eva += f1_
         recall_eva += recall_
         precision_eva += precision_
         iou_eva += iou_
         accuracy_eva += acc_
-
+        g_eva += G_
+        sensitivity_eva += sensitivity_
+        specificity_eva += specificity_
+        auc_roc_eva += auc_roc_
+        auc_pr_eva += auc_pr_
+        mse_eva += mse_
             ##################sigmoid or softmax
         '''
         if net.n_classes > 1:
@@ -720,7 +776,7 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
 
     net.train()
 
-    return accuracy_eva/(n+1), iou_eva/(n+1), precision_eva/(n+1), recall_eva/(n+1), f1_eva/(n+1)
+    return accuracy_eva/(n+1), iou_eva/(n+1), precision_eva/(n+1), recall_eva/(n+1), f1_eva/(n+1), specificity_eva / (n+1), sensitivity_eva / (n+1), g_eva/(n+1), auc_pr_eva/(n+1), auc_roc_eva/(n+1), mse_eva/(n+1)
 
     # if mode == 'vessel':
     #

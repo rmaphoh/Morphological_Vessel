@@ -42,7 +42,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 # ====================================
 
-from Baselines_models import MTSARVSnet, UNet
+from Baselines_models import MTSARVSnet, UNet, DualAttUNet
 # from Baselines_metrics import segmentation_scores, f1_score
 
 # from eval import pad_imgs, dice_coeff, AUC_PR, AUC_ROC, pixel_values_in_mask, misc_measures
@@ -73,12 +73,12 @@ val_transformer = transforms.Compose([
 
 class MultiTaskDataset(Dataset):
 
-    def __init__(self, imgs_dir, masks_dir_main, masks_dir_auxilary, img_size, train_or, mask_suffix=''):
+    def __init__(self, imgs_dir, masks_dir_main, masks_dir_auxilary, roi_mask_dir, img_size, train_or, mask_suffix=''):
 
         self.imgs_dir = imgs_dir
         self.masks_dir_main = masks_dir_main
         self.masks_dir_auxilary = masks_dir_auxilary
-        # self.no_labels = no_labels
+        self.roi_mask_dir = roi_mask_dir
 
         self.train_or = train_or
 
@@ -117,19 +117,22 @@ class MultiTaskDataset(Dataset):
         return padded
 
     @classmethod
-    def preprocess(self, pil_img, mask1, mask2, img_size, train_or, k):
+    def preprocess(self, pil_img, mask1, mask2, roi, img_size, train_or, k):
         # w, h = pil_img.size
         newW, newH = img_size[0], img_size[1]
         assert newW > 0 and newH > 0, 'Scale is too small'
         # pil_img = pil_img.resize((newW, newH))
 
         img_array = np.array(pil_img)
+        roi = np.array(roi)
         mask_array1 = np.array(mask1) / 255
         mask_array2 = np.array(mask2) / 255
 
         img_array = self.pad_imgs(img_array, img_size)
         mask_array1 = self.pad_imgs(mask_array1, img_size)
         mask_array2 = self.pad_imgs(mask_array2, img_size)
+
+        roi = self.pad_imgs(roi, img_size)
 
         # print('@@@@@@@@@@@@@@', np.shape(img_array))
         # print('@@@@@@@@@@@@@@', np.shape(mask_array1))
@@ -143,22 +146,27 @@ class MultiTaskDataset(Dataset):
                 # mask_array2 = mask_array2[:, ::-1]
                 # flip x:
                 img_array = np.flip(img_array, axis=0).copy()
+                roi = np.flip(roi, axis=0).copy()
                 mask_array1 = np.flip(mask_array1, axis=0).copy()
                 mask_array2 = np.flip(mask_array2, axis=0).copy()
             elif flipping_dice <= 0.5:
                 img_array = np.flip(img_array, axis=1).copy()
                 mask_array1 = np.flip(mask_array1, axis=1).copy()
                 mask_array2 = np.flip(mask_array2, axis=1).copy()
+                roi = np.flip(roi, axis=1).copy()
             elif flipping_dice <= 0.75:
                 img_array = np.flip(img_array, axis=1).copy()
+                roi = np.flip(roi, axis=1).copy()
                 mask_array1 = np.flip(mask_array1, axis=1).copy()
                 mask_array2 = np.flip(mask_array2, axis=1).copy()
                 img_array = np.flip(img_array, axis=0).copy()
                 mask_array1 = np.flip(mask_array1, axis=0).copy()
                 mask_array2 = np.flip(mask_array2, axis=0).copy()
+                roi = np.flip(roi, axis=0).copy()
 
             angle = 3 * np.random.randint(120)
             img_array = rotate(img_array, angle, axes=(0, 1), reshape=False)
+            roi = rotate(roi, angle, axes=(0, 1), reshape=False)
             # print('@@@@@@@@@@@@@@', np.shape(img_array))
             # print('@@@@@@@@@@@@@@', np.shape(mask_array))
 
@@ -196,6 +204,9 @@ class MultiTaskDataset(Dataset):
 
         if len(mask_array2.shape) == 2:
             mask_array2 = np.expand_dims(mask_array2, axis=2)
+
+        if len(roi.shape) == 2:
+            roi = np.expand_dims(roi, axis=2)
         # print(np.shape(img_array))
 
         # image_array_img = Image.fromarray((img_array*255).astype(np.uint8))
@@ -215,6 +226,8 @@ class MultiTaskDataset(Dataset):
         mask_array2 = mask_array2.transpose((2, 0, 1))
         mask_array2 = np.where(mask_array2 > 0.5, 1.0, 0.0)
 
+        roi = roi.transpose((2, 0, 1))
+        roi = np.where(roi > 0.5, 1.0, 0.0)
         # print('!!!!!!!!!!!!!!', np.shape(img_array))
         # print('!!!!!!!!!!!!!!', np.shape(mask_array1))
         # print('!!!!!!!!!!!!!!', np.shape(mask_array2))
@@ -283,7 +296,7 @@ class MultiTaskDataset(Dataset):
         # print(np.shape(mask_array2))
         # print(np.unique(mask_array2))
 
-        return img_array, mask_array1_new, mask_array2
+        return img_array, mask_array1_new, mask_array2, roi
 
     def __getitem__(self, index):
 
@@ -319,6 +332,8 @@ class MultiTaskDataset(Dataset):
         all_labels_main = glob.glob(os.path.join(self.masks_dir_main, '*.png'))
         all_labels_auxilary = glob.glob(os.path.join(self.masks_dir_auxilary, '*.png'))
 
+        all_rois = glob.glob(os.path.join(self.roi_mask_dir, '*.gif'))
+
         # print(len(all_images))
         # print(len(all_labels_main))
         # print(len(all_labels_auxilary))
@@ -326,6 +341,7 @@ class MultiTaskDataset(Dataset):
         all_labels_main.sort()
         all_labels_auxilary.sort()
         all_images.sort()
+        all_rois.sort()
 
         # mask_main = Image.open(mask_file_main[0])
         # mask_auxilary = Image.open(mask_file_auxilary[0])
@@ -334,6 +350,8 @@ class MultiTaskDataset(Dataset):
         mask_main = Image.open(all_labels_main[index])
         mask_auxilary = Image.open(all_labels_auxilary[index])
         img = Image.open(all_images[index])
+
+        roi = Image.open(all_rois[index])
 
         # assert img.size == mask_main.size, \
         #     f'Image and mask {idx} should be the same size, but are {img.size} and {mask_main.size}'
@@ -356,7 +374,7 @@ class MultiTaskDataset(Dataset):
         # mask_main = self.preprocess(mask_main, self.img_size)
         # mask_auxilary = self.preprocess(mask_auxilary, self.img_size)
         # if self.transform:
-        img, mask_main, mask_auxilary = self.preprocess(img, mask_main, mask_auxilary, self.img_size, self.train_or, index)
+        img, mask_main, mask_auxilary, roi = self.preprocess(img, mask_main, mask_auxilary, roi, self.img_size, self.train_or, index)
         # print('the range of img is: ',np.unique(img))
         # print('the range of mask is: ',np.unique(mask))
         '''
@@ -367,7 +385,8 @@ class MultiTaskDataset(Dataset):
         return {
             'image': torch.from_numpy(img).type(torch.FloatTensor),
             'mask_main': torch.from_numpy(mask_main).type(torch.FloatTensor),
-            'mask_auxilary': torch.from_numpy(mask_auxilary).type(torch.FloatTensor)
+            'mask_auxilary': torch.from_numpy(mask_auxilary).type(torch.FloatTensor),
+            'roi': torch.from_numpy(roi).type(torch.FloatTensor)
         }
 
 
@@ -408,6 +427,17 @@ def trainModels(dataset_name,
             Exp = UNet(in_ch=input_dim, width=32, class_no=class_no)
             #
             Exp_name = 'Unet_' + \
+                       '_train_batch_' + str(train_batchsize) + \
+                       '_repeat_' + str(repeat_str) + \
+                       '_lr_' + str(learning_rate) + \
+                       '_total_epoch_' + str(num_epochs) + \
+                       '_' + dataset_name
+
+        elif network == 'dual_attention_unet':
+
+            Exp = DualAttUNet(in_ch=input_dim, width=32, class_no=class_no)
+            #
+            Exp_name = 'Dual_Attention_Unet_' + \
                        '_train_batch_' + str(train_batchsize) + \
                        '_repeat_' + str(repeat_str) + \
                        '_lr_' + str(learning_rate) + \
@@ -455,6 +485,8 @@ def getData(data_directory, dataset_name, train_batchsize, image_size, multi_tas
         test_dir_mask_main = data_directory + '/' + dataset_name + '/test/1st_manual/'
         test_dir_mask_auxilary = data_directory + '/' + dataset_name + '/test/2nd_manual/'
 
+        test_dir_roi = data_directory + '/' + dataset_name + '/test/mask/'
+
     # train_dir = "./data/DRIVE_AV/training/images/"
     # dir_mask = "./data/DRIVE_AV/training/2st_manual/"
 
@@ -475,8 +507,8 @@ def getData(data_directory, dataset_name, train_batchsize, image_size, multi_tas
 
     else:
 
-        dataset = MultiTaskDataset(train_dir, dir_mask_main, dir_mask_auxiliary, image_size, train_or=True)
-        test_dataset = MultiTaskDataset(test_dir_img, test_dir_mask_main, test_dir_mask_auxilary, image_size, train_or=False)
+        dataset = MultiTaskDataset(train_dir, dir_mask_main, dir_mask_auxiliary, test_dir_roi, image_size, train_or=True)
+        test_dataset = MultiTaskDataset(test_dir_img, test_dir_mask_main, test_dir_mask_auxilary, test_dir_roi, image_size, train_or=False)
 
     # n_val = int(len(dataset) * val_percent)
     # n_train = len(dataset) - n_val
@@ -691,7 +723,7 @@ def trainSingleModel(model,
         # old version
         # val_score, acc, sensitivity, specificity, precision, G, F1_score_2 = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
         # current version:
-        accuracy_eva, iou_eva, precision_eva, recall_eva, f1_eva = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
+        accuracy_eva, iou_eva, precision_eva, recall_eva, f1_eva, specificity_eva, sensitivity_eva, g_eva, auc_pr_eva, auc_roc_eva, mse_eva = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
 
         if 'MTSARVSnet' in model_name:
             print(
@@ -923,13 +955,15 @@ def trainSingleModel(model,
     # New testing
     # ==========================
     acc_total = []
-    # sensitivity_total = []
-    # specificity_total = []
+    sensitivity_total = []
+    specificity_total = []
     precision_total = []
     recall_total = []
     iou_total = []
-    # G_total = []
-    # F1_score_2_total = []
+    G_total = []
+    mse_total = []
+    auc_roc_total = []
+    auc_pr_total = []
     F1_score_total = []
 
     epoch_threshold = num_epochs - 9
@@ -944,7 +978,7 @@ def trainSingleModel(model,
         model.eval()
         model.to(device=device)
         # test_score, acc, sensitivity, specificity, precision, G, F1_score_2 = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
-        accuracy_eva, iou_eva, precision_eva, recall_eva, f1_eva = eval_net_multitask(epoch, model, testloader, device, mask=True, mode='vessel', model_name=model_name)
+        accuracy_eva, iou_eva, precision_eva, recall_eva, f1_eva, specificity_eva, sensitivity_eva, g_eva, auc_pr_eva, auc_roc_eva, mse_eva = eval_net_multitask(epoch, model, testloader, device, mask=True, mode='vessel', model_name=model_name)
 
         acc_total.append(accuracy_eva)
         iou_total.append(iou_eva)
@@ -952,11 +986,12 @@ def trainSingleModel(model,
         recall_total.append(recall_eva)
         F1_score_total.append(f1_eva)
 
-        # sensitivity_total.append(sensitivity)
-        # specificity_total.append(specificity)
-        # precision_total.append(precision)
-        # G_total.append(G)
-        # F1_score_2_total.append(F1_score_2)
+        sensitivity_total.append(sensitivity_eva)
+        specificity_total.append(specificity_eva)
+        G_total.append(g_eva)
+        auc_roc_total.append(auc_roc_eva)
+        auc_pr_total.append(auc_pr_eva)
+        mse_total.append(mse_eva)
 
     for n, batch in enumerate(testloader):
         #
@@ -1063,13 +1098,26 @@ def trainSingleModel(model,
                               'Test recall mean': str(np.mean(recall_total)),
                               'Test iou mean': str(np.mean(iou_total)),
                               'Test Precision mean': str(np.mean(precision_total)),
-                              'Test F1 mean': str(np.mean(F1_score_total))}
+                              'Test F1 mean': str(np.mean(F1_score_total)),
+                              'Test sensitivity mean': str(np.mean(sensitivity_total)),
+                              'Test specifity mean': str(np.mean(specificity_total)),
+                              'Test G mean': str(np.mean(G_total)),
+                              'Test auc roc mean': str(np.mean(auc_roc_total)),
+                              'Test auc pr mean': str(np.mean(auc_pr_total)),
+                              'Test mse mean': str(np.mean(mse_total))}
 
     result_dictionary_std = {'Test Accuracy std': str(np.std(acc_total)),
                               'Test recall std': str(np.std(recall_total)),
                               'Test iou std': str(np.std(iou_total)),
                               'Test Precision std': str(np.std(precision_total)),
-                              'Test F1 std': str(np.std(F1_score_total))}
+                              'Test F1 std': str(np.std(F1_score_total)),
+                             'Test sensitivity std': str(np.std(sensitivity_total)),
+                             'Test specifity std': str(np.std(specificity_total)),
+                             'Test G std': str(np.std(G_total)),
+                             'Test auc roc std': str(np.std(auc_roc_total)),
+                             'Test auc pr std': str(np.std(auc_pr_total)),
+                             'Test mse std': str(np.std(mse_total))
+                             }
 
     save_path = saved_information_path + '/quantitative_results'
 

@@ -1,1 +1,0 @@
-{'Test Accuracy mean': '0.9784989249173159', 'Test recall mean': '0.8375385974215063', 'Test iou mean': '0.758638135848746', 'Test Precision mean': '0.8547296687944309', 'Test F1 mean': '0.8452683601729392'}
