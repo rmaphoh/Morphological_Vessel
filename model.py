@@ -241,6 +241,8 @@ class Generator_main(nn.Module):
         self.down3 = Down(4*n_filters, 8*n_filters)
         self.down4 = Down(8*n_filters, 16*n_filters)
 
+        self.downsample = nn.MaxPool2d(2)
+
         self.up1 = Up_new(16*n_filters, 8*n_filters, bilinear)
         self.S1 = side_one(8*n_filters, n_classes)
 
@@ -265,11 +267,15 @@ class Generator_main(nn.Module):
         s1 = self.S1(x)
         x = self.up2(x, x3)
         s2 = self.S2(x)
+        
+        #x = torch.cat([x_a, x, x_v], dim=1)
         x = self.up3(x, x2)
         s3 = self.S3(x)
         x = self.up4(x, x1)
+        
         x_fusion = torch.cat([x_a, x, x_v], dim=1)
         logits = self.outc(x_fusion)
+        #logits = self.outc(x)
 
         return logits, s1, s2, s3
 

@@ -19,14 +19,14 @@ source /share/apps/source_files/cuda/cuda-10.0.source
 
 nvidia-smi
 
+cd /cluster/project0/Ophthal_AV/Morphological_AV
+
 hostname
 date
 
-cd /SAN/medic/WSULOD2020/artery_vein_pytorch
-
 export PYTHONPATH=.:$PYTHONPATH
 
-python train.py --e=1800 --b=2 --learning-rate=2e-4 --v=10.0 --r=13 --dataset='DRIVE_AV' --discriminator='unet'
+python train.py --e=1500 --batch-size=2 --learning-rate=2e-4 --v=10.0 --alpha=0.5 --beta=1.1 --gama=0.08 --r=13 --dataset='LES-AV' --discriminator='unet'
 
 date
 

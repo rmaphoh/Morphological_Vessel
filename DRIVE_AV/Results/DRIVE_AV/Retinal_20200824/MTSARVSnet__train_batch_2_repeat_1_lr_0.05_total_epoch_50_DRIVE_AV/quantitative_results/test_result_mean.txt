@@ -1,0 +1,1 @@
+{'Test Accuracy mean': '0.5520984130932942', 'Test Sensitivity mean': '0.9999999999993121', 'Test Specificity mean': '0.0', 'Test Precision mean': '0.5520984130930846', 'Test G mean': '0.0', 'Test F1 mean': '0.7117344416929229'}
