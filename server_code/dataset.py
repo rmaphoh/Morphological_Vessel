@@ -48,6 +48,13 @@ class BasicDataset(Dataset):
         i = 0
         self.ids = [splitext(file)[0] for file in listdir(imgs_dir)
                     if not file.startswith('.')]
+
+        self.ids_1 = [splitext(file)[0] for file in listdir(masks_dir)
+                    if not file.startswith('.')]
+
+        self.ids_2 = [splitext(file)[0] for file in listdir(module_dir)
+                    if not file.startswith('.')]
+
         logging.info(f'Creating dataset with {(self.ids)} ')
         logging.info(f'Creating dataset with {len(self.ids)} examples')
 
@@ -68,7 +75,7 @@ class BasicDataset(Dataset):
         return padded
 
     @classmethod
-    def crop_imgs(self, imgs, mask_array, module_array, img_size):
+    def crop_imgs(self, imgs, mask_array, module_array, img_size, k):
 
         img_h,img_w=imgs.shape[0], imgs.shape[1]
         target_h,target_w=4*img_size[0],4*img_size[1]  
@@ -79,18 +86,48 @@ class BasicDataset(Dataset):
             d=imgs.shape[2]
             padded_final_img=np.zeros((592,592,d))
             padded_final_label=np.zeros((592,592,d))
+            padded_final_module=np.zeros((592,592))
         elif len(imgs.shape)==2:
             padded_final_img=np.zeros((592,592))
             padded_final_module=np.zeros((592,592))
-        '''
-        for i in range(1,3):
-            for j in range(1,3):
+
+
+        for i in range(1,4):
+            for j in range(1,4):
                 #padded_final[((i-1)*3+j-1)*imgs.shape[0]:(((i-1)*3+j)*imgs.shape[0])]=imgs[:,(i-1)*280+200:(i-1)*280+792,(j-1)*390+100:(j-1)*390+692,...]
-                padded_final[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]=imgs[(i-1)*592+200:(i)*592+200,(j-1)*592+200:(j)*592+200,...]
-        '''
-        padded_final_img=imgs[(x_pos[0]-296):(x_pos[0]+296),y_pos[0]-296:y_pos[0]+296,...]
-        padded_final_label=mask_array[(x_pos[0]-296):(x_pos[0]+296),y_pos[0]-296:y_pos[0]+296,...]
-        padded_final_module=module_array[(x_pos[0]-296):(x_pos[0]+296),y_pos[0]-296:y_pos[0]+296,...]
+                '''
+                padded_final_img[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]=imgs[(i-1)*592+200:(i)*592+200,(j-1)*592+200:(j)*592+200,...]
+                padded_final_label[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]=mask_array[(i-1)*592+200:(i)*592+200,(j-1)*592+200:(j)*592+200,...]
+                padded_final_module[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]=module_array[(i-1)*592+200:(i)*592+200,(j-1)*592+200:(j)*592+200,...]
+
+                final_img = Image.fromarray((padded_final_img[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]).astype(np.uint8))
+                final_label = Image.fromarray((padded_final_label[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]).astype(np.uint8))
+                final_module = Image.fromarray((padded_final_module[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]).astype(np.uint8))
+                '''
+                print('xxxxxxxxxxxxxx', (i-1)*592+50-(i-1)*230)
+                print('xxxxxxxxxxxxxx', (i)*592+50-(i-1)*230)
+                print('yyyyyyyyyy', (j-1)*592+100-(j-1)*150)
+                print('yyyyyyyyyy', (j)*592+100-(j-1)*150)
+
+                padded_final_img=imgs[(i-1)*592+50-(i-1)*230:(i)*592+50-(i-1)*230,(j-1)*592+100-(j-1)*150:(j)*592+100-(j-1)*150,...]
+                padded_final_label=mask_array[(i-1)*592+50-(i-1)*230:(i)*592+50-(i-1)*230,(j-1)*592+100-(j-1)*150:(j)*592+100-(j-1)*150,...]
+                padded_final_module=module_array[(i-1)*592+50-(i-1)*230:(i)*592+50-(i-1)*230,(j-1)*592+100-(j-1)*150:(j)*592+100-(j-1)*150]
+
+                #print(np.unique(padded_final_module))
+
+                final_img = Image.fromarray((padded_final_img).astype(np.uint8))
+                final_label = Image.fromarray((padded_final_label*255).astype(np.uint8))
+                final_module = Image.fromarray((padded_final_module*255).astype(np.uint8))
+
+
+                final_img.save('./data/LES-AV-patch/test/images/image_{}_{}_{}.png'.format(k,i,j))
+                final_label.save('./data/LES-AV-patch/test/1st_manual/label_{}_{}_{}.png'.format(k,i,j))
+                final_module.save('./data/LES-AV-patch/test/mask/mask_{}_{}_{}.gif'.format(k,i,j))
+
+        
+        #padded_final_img=imgs[(x_pos[0]-296):(x_pos[0]+296),y_pos[0]-296:y_pos[0]+296,...]
+        #padded_final_label=mask_array[(x_pos[0]-296):(x_pos[0]+296),y_pos[0]-296:y_pos[0]+296,...]
+        #padded_final_module=module_array[(x_pos[0]-296):(x_pos[0]+296),y_pos[0]-296:y_pos[0]+296,...]
   
         return padded_final_img, padded_final_label, padded_final_module
 
@@ -112,7 +149,8 @@ class BasicDataset(Dataset):
 
         img_array = np.array(pil_img)
         mask_array = np.array(mask)/255
-        module_array = np.array(module)/255
+        #module_array = np.array(module)/255
+        module_array = np.array(module)
 
         if dataset_name=='DRIVE_AV':
             img_array = self.pad_imgs(img_array, img_size)
@@ -122,7 +160,7 @@ class BasicDataset(Dataset):
             #print('@@@@@@@@@@@@@@', np.shape(mask_array))
         
         if dataset_name=='LES-AV':
-            img_array, mask_array, module_array = self.crop_imgs(img_array, mask_array, module_array, img_size)
+            img_array, mask_array, module_array = self.crop_imgs(img_array, mask_array, module_array, img_size, k)
             #mask_array = self.crop_imgs(mask_array, img_size)
             #module_array = self.crop_imgs(module_array, img_size)
 
@@ -150,6 +188,8 @@ class BasicDataset(Dataset):
         if dataset_name=='DRIVE_AV':
             img_array=(img_array-1.0*mean)/1.0*std
         if dataset_name=='LES-AV':
+            img_array=(img_array-1.0*mean)/1.0*std
+        if dataset_name=='LES-AV-patch':
             img_array=(img_array-1.0*mean)/1.0*std
             
         if len(img_array.shape) == 2:
@@ -179,6 +219,12 @@ class BasicDataset(Dataset):
 
             mask_array = np.where(mask_array > 0.5, 1, 0)
 
+        if dataset_name=='LES-AV-patch':
+            img_array = img_array.transpose((2, 0, 1))
+            mask_array = mask_array.transpose((2, 0, 1))
+
+            mask_array = np.where(mask_array > 0.5, 1, 0)
+
         #print('!!!!!!!!!!!!!!', np.shape(img_array))
         #print('!!!!!!!!!!!!!!', np.shape(mask_array))
 
@@ -189,13 +235,13 @@ class BasicDataset(Dataset):
 
     def __getitem__(self, i):
         idx = self.ids[i]
-        
+        idx_1 = self.ids_1[i]
+        idx_2 = self.ids_2[i]
         #mask_file = glob(self.masks_dir + idx + self.mask_suffix + '.*')
-        mask_file = glob(self.masks_dir + idx  + '.*')
+        mask_file = glob(self.masks_dir + idx_1  + '.*')
         #logging.info(f'Creating dataset with {len(mask_file)} mask')
-    
         img_file = glob(self.imgs_dir + idx + '.*')
-        module_file = glob(self.module_dir + idx + '_mask' + '.*')
+        module_file = glob(self.module_dir + idx_2 + '.*')
 
         assert len(mask_file) == 1, \
             f'Either no mask or multiple masks found for the ID {idx}: {mask_file}'

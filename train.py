@@ -114,7 +114,7 @@ def train_net(net_G,
         total_train_pixel = 0
         epoch_loss_G = 0
         epoch_loss_D = 0
-        tot=[]
+        tott=[]
         sent=[]
         spet=[]
         pret=[]
@@ -129,7 +129,7 @@ def train_net(net_G,
             for batch in train_loader:
                 imgs = batch['image']
                 true_masks = batch['mask']
-
+                
                 [true_masks_a,_,true_masks_v] = torch.split(true_masks, split_size_or_sections=1, dim=1)
                 true_masks_a = torch.cat((true_masks_a,true_masks_a,true_masks_a), dim=1)
                 true_masks_v = torch.cat((true_masks_v,true_masks_v,true_masks_v), dim=1)
@@ -517,7 +517,7 @@ def train_net(net_G,
         if epoch > 1400:
             if epoch%10==1:
 
-                    tot.append(acc)
+                    tott.append(acc)
                     sent.append(sensitivity)
                     spet.append(specificity)
                     pret.append(precision)
@@ -529,7 +529,7 @@ def train_net(net_G,
                     auc_prt.append(auc_pr)
 
     print('The training evaluation:')
-    print('Accuracy: ', np.mean(tot))
+    print('Accuracy: ', np.mean(tott))
     print('Sensitivity: ', np.mean(sent))
     print('specificity: ', np.mean(spet))
     print('precision: ', np.mean(pret))
@@ -540,7 +540,7 @@ def train_net(net_G,
     print('auc_roc: ', np.mean(auc_roct))
     print('auc_pr: ', np.mean(auc_prt))
 
-    print('Accuracy: ', np.std(tot))
+    print('Accuracy: ', np.std(tott))
     print('Sensitivity: ', np.std(sent))
     print('specificity: ', np.std(spet))
     print('precision: ', np.std(pret))

@@ -12,21 +12,17 @@
 # activate the virtual env tensorflow
 
 source activate covid
-# Source file for CUDA 8.0 and cuDNN 7.0.5
-# 23/04/18
 
 source /share/apps/source_files/cuda/cuda-10.0.source
 
 nvidia-smi
-
-cd /cluster/project0/Ophthal_AV/Morphological_AV
 
 hostname
 date
 
 export PYTHONPATH=.:$PYTHONPATH
 
-python train.py --e=1500 --batch-size=2 --learning-rate=2e-4 --v=10.0 --alpha=0.5 --beta=1.1 --gama=0.08 --r=13 --dataset='LES-AV' --discriminator='unet'
+python train.py --e=1800 --batch-size=2 --learning-rate=8e-4 --v=10.0 --alpha=0.5 --beta=1.1 --gama=0.08 --r=13 --dataset='LES-AV-patch' --discriminator='unet'
 
 date
 

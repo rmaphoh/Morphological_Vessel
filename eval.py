@@ -363,24 +363,26 @@ def eval_net(epoch, net, net_a, net_v, loader, device, mask, mode, train_or):
                     ##########################################
                     #uncertainty
                     #######################################
-                    encoded_gt_vessel_point_u, encoded_pred_vessel_point_u = pixel_values_in_mask(encoded_gt_u, encoded_pred_u, module_pad_cpu,train_or )
 
-                    auc_roc_u=AUC_ROC(encoded_gt_vessel_point_u,encoded_pred_vessel_point_u)
-                    auc_pr_u=AUC_PR(encoded_gt_vessel_point_u, encoded_pred_vessel_point_u)
+                    if count_uncertainty!=0:
+                        encoded_gt_vessel_point_u, encoded_pred_vessel_point_u = pixel_values_in_mask(encoded_gt_u, encoded_pred_u, module_pad_cpu,train_or )
 
-                    #### ONly consider artery and vein to the background
-                    acc_ve_u, sensitivity_ve_u, specificity_ve_u, precision_ve_u, G_ve_u, F1_score_ve_u, mse_u, iou_u = misc_measures(encoded_gt_vessel_point_u, encoded_pred_vessel_point_u)
-            
-                    tot_u+=acc_ve_u
-                    sent_u+=sensitivity_ve_u
-                    spet_u+=specificity_ve_u
-                    pret_u+=precision_ve_u
-                    G_t_u+=G_ve_u
-                    F1t_u+=F1_score_ve_u
-                    mset_u+=mse_u
-                    iout_u+=iou_u
-                    auc_roct_u+=auc_roc_u
-                    auc_prt_u+=auc_pr_u
+                        auc_roc_u=AUC_ROC(encoded_gt_vessel_point_u,encoded_pred_vessel_point_u)
+                        auc_pr_u=AUC_PR(encoded_gt_vessel_point_u, encoded_pred_vessel_point_u)
+
+                        #### ONly consider artery and vein to the background
+                        acc_ve_u, sensitivity_ve_u, specificity_ve_u, precision_ve_u, G_ve_u, F1_score_ve_u, mse_u, iou_u = misc_measures(encoded_gt_vessel_point_u, encoded_pred_vessel_point_u)
+                
+                        tot_u+=acc_ve_u
+                        sent_u+=sensitivity_ve_u
+                        spet_u+=specificity_ve_u
+                        pret_u+=precision_ve_u
+                        G_t_u+=G_ve_u
+                        F1t_u+=F1_score_ve_u
+                        mset_u+=mse_u
+                        iout_u+=iou_u
+                        auc_roct_u+=auc_roc_u
+                        auc_prt_u+=auc_pr_u
 
                     tot+=(count_artery*acc_ve_a + count_vein*acc_ve_v + count_uncertainty*acc_ve_u)/count_total
                     sent+=(count_artery*sensitivity_ve_a + count_vein*sensitivity_ve_v + count_uncertainty*sensitivity_ve_u)/count_total

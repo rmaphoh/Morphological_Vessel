@@ -47,7 +47,7 @@ def test_net(net_all, net_a, net_v, loader, device, mode):
                 mask_pred_tensor = mask_pred.clone().detach()
                 mask_pred_tensor = torch.sigmoid(mask_pred_tensor)
                 mask_pred_tensor = torch.squeeze(mask_pred_tensor)
-                save_image(mask_pred_tensor, './seg_results/20200905_all/img_{:02}.png'.format(num))
+                save_image(mask_pred_tensor, './seg_results/20200907_all/img_{:02}.png'.format(num))
 
                 mask_pred_numpy = mask_pred.clone().detach().cpu().numpy()
                 #print(np.shape(mask_pred_numpy))
@@ -66,7 +66,7 @@ def test_net(net_all, net_a, net_v, loader, device, mode):
                 k = k.transpose((1, 2, 0))
                 #print(np.shape(k))
                 result = Image.fromarray(k)
-                result.save('./seg_results/20200905_all/PIL_{:02}.png'.format(num))
+                result.save('./seg_results/20200907_all/PIL_{:02}.png'.format(num))
                 
                 pbar.update()
 
@@ -111,7 +111,7 @@ def test_net(net_all, net_a, net_v, loader, device, mode):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 logging.info(f'Using device {device}')
 dis = 'unet'
-dataset = 'DRIVE_AV'
+dataset = 'LES-AV'
 gan2seg = 13
 image_size = (592,592)
 batch_size = 1
@@ -184,9 +184,9 @@ net_G_V = Generator_branch(input_channels=3, n_filters = 32, n_classes=3, biline
 #########################3
 ##########################       20200812_unetgan    ###########################
 for i in range(10):
-    net_G.load_state_dict(torch.load('./DRIVE_AV/checkpoints/20200905_all/AV_model_unet_13CP_epoch{}_all.pth'.format(1401+10*i)))
-    net_G_A.load_state_dict(torch.load('./DRIVE_AV/checkpoints/20200905_all/AV_model_unet_13CP_epoch{}_A.pth'.format(1401+10*i)))
-    net_G_V.load_state_dict(torch.load('./DRIVE_AV/checkpoints/20200905_all/AV_model_unet_13CP_epoch{}_V.pth'.format(1401+10*i)))
+    net_G.load_state_dict(torch.load('./LES-AV/checkpoints/20200907_all/AV_model_unet_13CP_epoch{}_all.pth'.format(1301+10*i)))
+    net_G_A.load_state_dict(torch.load('./LES-AV/checkpoints/20200907_all/AV_model_unet_13CP_epoch{}_A.pth'.format(1301+10*i)))
+    net_G_V.load_state_dict(torch.load('./LES-AV/checkpoints/20200907_all/AV_model_unet_13CP_epoch{}_V.pth'.format(1301+10*i)))
     net_G.eval()
     net_G_A.eval()
     net_G_V.eval()
