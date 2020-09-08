@@ -117,6 +117,40 @@ class MultiTaskDataset(Dataset):
         return padded
 
     @classmethod
+    def crop_imgs(self, imgs, mask_array1, mask_array2, module_array, img_size):
+        '''
+        :param imgs:
+        :param mask_array1: 1st_mannual
+        :param mask_array2: 2st mannual
+        :param module_array:
+        :param img_size:
+        :return:
+        '''
+        img_h, img_w = imgs.shape[0], imgs.shape[1]
+        target_h, target_w = 4 * img_size[0], 4 * img_size[1]
+        y_pos = np.random.randint(297, 1323, size=1)
+        x_pos = np.random.randint(297, 1147, size=1)
+
+        if len(imgs.shape) == 3:
+            d = imgs.shape[2]
+            padded_final_img = np.zeros((592, 592, d))
+            padded_final_label = np.zeros((592, 592, d))
+        elif len(imgs.shape) == 2:
+            padded_final_img = np.zeros((592, 592))
+            padded_final_module = np.zeros((592, 592))
+        '''
+        for i in range(1,3):
+            for j in range(1,3):
+                #padded_final[((i-1)*3+j-1)*imgs.shape[0]:(((i-1)*3+j)*imgs.shape[0])]=imgs[:,(i-1)*280+200:(i-1)*280+792,(j-1)*390+100:(j-1)*390+692,...]
+                padded_final[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]=imgs[(i-1)*592+200:(i)*592+200,(j-1)*592+200:(j)*592+200,...]
+        '''
+        padded_final_img = imgs[(x_pos[0] - 296):(x_pos[0] + 296), y_pos[0] - 296:y_pos[0] + 296, ...]
+        padded_final_label = mask_array[(x_pos[0] - 296):(x_pos[0] + 296), y_pos[0] - 296:y_pos[0] + 296, ...]
+        padded_final_module = module_array[(x_pos[0] - 296):(x_pos[0] + 296), y_pos[0] - 296:y_pos[0] + 296, ...]
+
+        return padded_final_img, padded_final_label, padded_final_module
+
+    @classmethod
     def preprocess(self, pil_img, mask1, mask2, roi, img_size, train_or, k):
         # w, h = pil_img.size
         newW, newH = img_size[0], img_size[1]
@@ -124,7 +158,7 @@ class MultiTaskDataset(Dataset):
         # pil_img = pil_img.resize((newW, newH))
 
         img_array = np.array(pil_img)
-        roi = np.array(roi)
+        roi = np.array(roi) / 255
         mask_array1 = np.array(mask1) / 255
         mask_array2 = np.array(mask2) / 255
 
@@ -723,7 +757,10 @@ def trainSingleModel(model,
         # old version
         # val_score, acc, sensitivity, specificity, precision, G, F1_score_2 = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
         # current version:
-        accuracy_eva, iou_eva, precision_eva, recall_eva, f1_eva, specificity_eva, sensitivity_eva, g_eva, auc_pr_eva, auc_roc_eva, mse_eva = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
+        accuracy_eva, iou_eva, precision_eva, recall_eva, f1_eva, specificity_eva, sensitivity_eva, g_eva, auc_pr_eva, auc_roc_eva, mse_eva,\
+        accuracy_eva_, iou_eva_, precision_eva_, recall_eva_, f1_eva_, specificity_eva_, sensitivity_eva_, g_eva_, auc_pr_eva_, auc_roc_eva_, mse_eva_,\
+        accuracy_eva_, iou_eva_, precision_eva_, recall_eva_, f1_eva_, specificity_eva_, sensitivity_eva_, g_eva_, auc_pr_eva_, auc_roc_eva_, mse_eva_, \
+        accuracy_eva_, iou_eva_, precision_eva_, recall_eva_, f1_eva_, specificity_eva_, sensitivity_eva_, g_eva_, auc_pr_eva_, auc_roc_eva_, mse_eva_ = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
 
         if 'MTSARVSnet' in model_name:
             print(
@@ -966,6 +1003,42 @@ def trainSingleModel(model,
     auc_pr_total = []
     F1_score_total = []
 
+    acc_total_artery = []
+    sensitivity_total_artery = []
+    specificity_total_artery = []
+    precision_total_artery = []
+    recall_total_artery = []
+    iou_total_artery = []
+    G_total_artery = []
+    mse_total_artery = []
+    auc_roc_total_artery = []
+    auc_pr_total_artery = []
+    F1_score_total_artery = []
+
+    acc_total_vein = []
+    sensitivity_total_vein = []
+    specificity_total_vein = []
+    precision_total_vein = []
+    recall_total_vein = []
+    iou_total_vein = []
+    G_total_vein = []
+    mse_total_vein = []
+    auc_roc_total_vein = []
+    auc_pr_total_vein = []
+    F1_score_total_vein = []
+
+    acc_total_vessel = []
+    sensitivity_total_vessel = []
+    specificity_total_vessel = []
+    precision_total_vessel = []
+    recall_total_vessel = []
+    iou_total_vessel = []
+    G_total_vessel = []
+    mse_total_vessel = []
+    auc_roc_total_vessel = []
+    auc_pr_total_vessel = []
+    F1_score_total_vessel = []
+
     epoch_threshold = num_epochs - 9
 
     for i in range(9):
@@ -978,20 +1051,58 @@ def trainSingleModel(model,
         model.eval()
         model.to(device=device)
         # test_score, acc, sensitivity, specificity, precision, G, F1_score_2 = eval_net_multitask(epoch, model, validateloader, device, mask=True, mode='vessel', model_name=model_name)
-        accuracy_eva, iou_eva, precision_eva, recall_eva, f1_eva, specificity_eva, sensitivity_eva, g_eva, auc_pr_eva, auc_roc_eva, mse_eva = eval_net_multitask(epoch, model, testloader, device, mask=True, mode='vessel', model_name=model_name)
+        accuracy_eva, iou_eva, precision_eva, recall_eva, f1_eva, specificity_eva, sensitivity_eva, g_eva, auc_pr_eva, auc_roc_eva, mse_eva, \
+        accuracy_eva_artery, iou_eva_artery, precision_eva_artery, recall_eva_artery, f1_eva_artery, specificity_eva_artery, sensitivity_eva_artery, g_eva_artery, auc_pr_eva_artery, auc_roc_eva_artery, mse_eva_artery, \
+        accuracy_eva_vein, iou_eva_vein, precision_eva_vein, recall_eva_vein, f1_eva_vein, specificity_eva_vein, sensitivity_eva_vein, g_eva_vein, auc_pr_eva_vein, auc_roc_eva_vein, mse_eva_vein, \
+        accuracy_eva_vessel, iou_eva_vessel, precision_eva_vessel, recall_eva_vessel, f1_eva_vessel, specificity_eva_vessel, sensitivity_eva_vessel, g_eva_vessel, auc_pr_eva_vessel, auc_roc_eva_vessel, mse_eva_vessel = eval_net_multitask(epoch, model, testloader, device, mask=True, mode='vessel', model_name=model_name)
 
         acc_total.append(accuracy_eva)
         iou_total.append(iou_eva)
         precision_total.append(precision_eva)
         recall_total.append(recall_eva)
         F1_score_total.append(f1_eva)
-
         sensitivity_total.append(sensitivity_eva)
         specificity_total.append(specificity_eva)
         G_total.append(g_eva)
         auc_roc_total.append(auc_roc_eva)
         auc_pr_total.append(auc_pr_eva)
         mse_total.append(mse_eva)
+
+        acc_total_artery.append(accuracy_eva_artery)
+        iou_total_artery.append(iou_eva_artery)
+        precision_total_artery.append(precision_eva_artery)
+        recall_total_artery.append(recall_eva_artery)
+        F1_score_total_artery.append(f1_eva_artery)
+        sensitivity_total_artery.append(sensitivity_eva_artery)
+        specificity_total_artery.append(specificity_eva_artery)
+        G_total_artery.append(g_eva_artery)
+        auc_roc_total_artery.append(auc_roc_eva_artery)
+        auc_pr_total_artery.append(auc_pr_eva_artery)
+        mse_total_artery.append(mse_eva_artery)
+
+        acc_total_vein.append(accuracy_eva_vein)
+        iou_total_vein.append(iou_eva_vein)
+        precision_total_vein.append(precision_eva_vein)
+        recall_total_vein.append(recall_eva_vein)
+        F1_score_total_vein.append(f1_eva_vein)
+        sensitivity_total_vein.append(sensitivity_eva_vein)
+        specificity_total_vein.append(specificity_eva_vein)
+        G_total_vein.append(g_eva_vein)
+        auc_roc_total_vein.append(auc_roc_eva_vein)
+        auc_pr_total_vein.append(auc_pr_eva_vein)
+        mse_total_vein.append(mse_eva_vein)
+
+        acc_total_vessel.append(accuracy_eva_vessel)
+        iou_total_vessel.append(iou_eva_vessel)
+        precision_total_vessel.append(precision_eva_vessel)
+        recall_total_vessel.append(recall_eva_vessel)
+        F1_score_total_vessel.append(f1_eva_vessel)
+        sensitivity_total_vessel.append(sensitivity_eva_vessel)
+        specificity_total_vessel.append(specificity_eva_vessel)
+        G_total_vessel.append(g_eva_vessel)
+        auc_roc_total_vessel.append(auc_roc_eva_vessel)
+        auc_pr_total_vessel.append(auc_pr_eva_vessel)
+        mse_total_vessel.append(mse_eva_vessel)
 
     for n, batch in enumerate(testloader):
         #
@@ -1104,7 +1215,8 @@ def trainSingleModel(model,
                               'Test G mean': str(np.mean(G_total)),
                               'Test auc roc mean': str(np.mean(auc_roc_total)),
                               'Test auc pr mean': str(np.mean(auc_pr_total)),
-                              'Test mse mean': str(np.mean(mse_total))}
+                              'Test mse mean': str(np.mean(mse_total))
+                              }
 
     result_dictionary_std = {'Test Accuracy std': str(np.std(acc_total)),
                               'Test recall std': str(np.std(recall_total)),
@@ -1119,6 +1231,84 @@ def trainSingleModel(model,
                              'Test mse std': str(np.std(mse_total))
                              }
 
+    result_dictionary_mean_artery = {'Test Accuracy mean': str(np.mean(acc_total_artery)),
+                                     'Test recall mean': str(np.mean(recall_total_artery)),
+                                     'Test iou mean': str(np.mean(iou_total_artery)),
+                                     'Test Precision mean': str(np.mean(precision_total_artery)),
+                                     'Test F1 mean': str(np.mean(F1_score_total_artery)),
+                                     'Test sensitivity mean': str(np.mean(sensitivity_total_artery)),
+                                     'Test specifity mean': str(np.mean(specificity_total_artery)),
+                                     'Test G mean': str(np.mean(G_total_artery)),
+                                     'Test auc roc mean': str(np.mean(auc_roc_total_artery)),
+                                     'Test auc pr mean': str(np.mean(auc_pr_total_artery)),
+                                     'Test mse mean': str(np.mean(mse_total_artery))
+                                     }
+
+    result_dictionary_std_artery = {'Test Accuracy std': str(np.std(acc_total_artery)),
+                                    'Test recall std': str(np.std(recall_total_artery)),
+                                    'Test iou std': str(np.std(iou_total_artery)),
+                                    'Test Precision std': str(np.std(precision_total_artery)),
+                                    'Test F1 std': str(np.std(F1_score_total_artery)),
+                                    'Test sensitivity std': str(np.std(sensitivity_total_artery)),
+                                    'Test specifity std': str(np.std(specificity_total_artery)),
+                                    'Test G std': str(np.std(G_total_artery)),
+                                    'Test auc roc std': str(np.std(auc_roc_total_artery)),
+                                    'Test auc pr std': str(np.std(auc_pr_total_artery)),
+                                    'Test mse std': str(np.std(mse_total_artery))
+                                    }
+
+    result_dictionary_mean_vein = {'Test Accuracy mean': str(np.mean(acc_total_vein)),
+                                     'Test recall mean': str(np.mean(recall_total_vein)),
+                                     'Test iou mean': str(np.mean(iou_total_vein)),
+                                     'Test Precision mean': str(np.mean(precision_total_vein)),
+                                     'Test F1 mean': str(np.mean(F1_score_total_vein)),
+                                     'Test sensitivity mean': str(np.mean(sensitivity_total_vein)),
+                                     'Test specifity mean': str(np.mean(specificity_total_vein)),
+                                     'Test G mean': str(np.mean(G_total_vein)),
+                                     'Test auc roc mean': str(np.mean(auc_roc_total_vein)),
+                                     'Test auc pr mean': str(np.mean(auc_pr_total_vein)),
+                                     'Test mse mean': str(np.mean(mse_total_vein))
+                                     }
+
+    result_dictionary_std_vein = {'Test Accuracy std': str(np.std(acc_total_vein)),
+                                    'Test recall std': str(np.std(recall_total_vein)),
+                                    'Test iou std': str(np.std(iou_total_vein)),
+                                    'Test Precision std': str(np.std(precision_total_vein)),
+                                    'Test F1 std': str(np.std(F1_score_total_vein)),
+                                    'Test sensitivity std': str(np.std(sensitivity_total_vein)),
+                                    'Test specifity std': str(np.std(specificity_total_vein)),
+                                    'Test G std': str(np.std(G_total_vein)),
+                                    'Test auc roc std': str(np.std(auc_roc_total_vein)),
+                                    'Test auc pr std': str(np.std(auc_pr_total_vein)),
+                                    'Test mse std': str(np.std(mse_total_vein))
+                                    }
+
+    result_dictionary_mean_vessel = {'Test Accuracy mean': str(np.mean(acc_total_vessel)),
+                                     'Test recall mean': str(np.mean(recall_total_vessel)),
+                                     'Test iou mean': str(np.mean(iou_total_vessel)),
+                                     'Test Precision mean': str(np.mean(precision_total_vessel)),
+                                     'Test F1 mean': str(np.mean(F1_score_total_vessel)),
+                                     'Test sensitivity mean': str(np.mean(sensitivity_total_vessel)),
+                                     'Test specifity mean': str(np.mean(specificity_total_vessel)),
+                                     'Test G mean': str(np.mean(G_total_vessel)),
+                                     'Test auc roc mean': str(np.mean(auc_roc_total_vessel)),
+                                     'Test auc pr mean': str(np.mean(auc_pr_total_vessel)),
+                                     'Test mse mean': str(np.mean(mse_total_vessel))
+                                     }
+
+    result_dictionary_std_vessel = {'Test Accuracy std': str(np.std(acc_total_vessel)),
+                                    'Test recall std': str(np.std(recall_total_vessel)),
+                                    'Test iou std': str(np.std(iou_total_vessel)),
+                                    'Test Precision std': str(np.std(precision_total_vessel)),
+                                    'Test F1 std': str(np.std(F1_score_total_vessel)),
+                                    'Test sensitivity std': str(np.std(sensitivity_total_vessel)),
+                                    'Test specifity std': str(np.std(specificity_total_vessel)),
+                                    'Test G std': str(np.std(G_total_vessel)),
+                                    'Test auc roc std': str(np.std(auc_roc_total_vessel)),
+                                    'Test auc pr std': str(np.std(auc_pr_total_vessel)),
+                                    'Test mse std': str(np.std(mse_total_vessel))
+                                    }
+
     save_path = saved_information_path + '/quantitative_results'
 
     try:
@@ -1128,14 +1318,44 @@ def trainSingleModel(model,
             raise
         pass
 
-    ff_path_mean = save_path + '/test_result_mean.txt'
+    ff_path_mean = save_path + '/test_result_mean_total.txt'
     ff_mean = open(ff_path_mean, 'w')
     ff_mean.write(str(result_dictionary_mean))
     ff_mean.close()
 
-    ff_path_std = save_path + '/test_result_std.txt'
+    ff_path_std = save_path + '/test_result_std_total.txt'
     ff_std = open(ff_path_std, 'w')
     ff_std.write(str(result_dictionary_std))
+    ff_std.close()
+
+    ff_path_mean = save_path + '/test_result_mean_artery.txt'
+    ff_mean = open(ff_path_mean, 'w')
+    ff_mean.write(str(result_dictionary_mean_artery))
+    ff_mean.close()
+
+    ff_path_std = save_path + '/test_result_std_artery.txt'
+    ff_std = open(ff_path_std, 'w')
+    ff_std.write(str(result_dictionary_std_artery))
+    ff_std.close()
+
+    ff_path_mean = save_path + '/test_result_mean_vein.txt'
+    ff_mean = open(ff_path_mean, 'w')
+    ff_mean.write(str(result_dictionary_mean_vein))
+    ff_mean.close()
+
+    ff_path_std = save_path + '/test_result_std_vein.txt'
+    ff_std = open(ff_path_std, 'w')
+    ff_std.write(str(result_dictionary_std_vein))
+    ff_std.close()
+
+    ff_path_mean = save_path + '/test_result_mean_vessel.txt'
+    ff_mean = open(ff_path_mean, 'w')
+    ff_mean.write(str(result_dictionary_mean_vessel))
+    ff_mean.close()
+
+    ff_path_std = save_path + '/test_result_std_vessel.txt'
+    ff_std = open(ff_path_std, 'w')
+    ff_std.write(str(result_dictionary_std_vessel))
     ff_std.close()
     # ===========================
     stop = timeit.default_timer()

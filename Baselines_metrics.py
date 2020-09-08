@@ -72,8 +72,8 @@ def f1_score(label_gt, label_pred, n_class):
     # precision[:] = precision_score(img_A, img_B, average='macro', labels=range(n_class))
     # recall[:] = recall_score(img_A, img_B, average='macro', labels=range(n_class))
     #
-    precision = precision_score(img_A, img_B, average='macro')
-    recall = recall_score(img_A, img_B, average='macro')
+    precision = precision_score(img_A, img_B)
+    recall = recall_score(img_A, img_B)
     #
     f1_metric = 2 * (recall * precision) / (recall + precision + 1e-8)
     #
@@ -536,6 +536,58 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
     mse_eva = 0
     g_eva = 0
 
+    precision_eva_artery = 0
+    recall_eva_artery = 0
+    accuracy_eva_artery = 0
+    iou_eva_artery = 0
+    f1_eva_artery = 0
+
+    sensitivity_eva_artery = 0
+    specificity_eva_artery = 0
+    auc_roc_eva_artery = 0
+    auc_pr_eva_artery = 0
+    mse_eva_artery = 0
+    g_eva_artery = 0
+
+    precision_eva_vein = 0
+    recall_eva_vein = 0
+    accuracy_eva_vein = 0
+    iou_eva_vein = 0
+    f1_eva_vein = 0
+
+    sensitivity_eva_vein = 0
+    specificity_eva_vein = 0
+    auc_roc_eva_vein = 0
+    auc_pr_eva_vein = 0
+    mse_eva_vein = 0
+    g_eva_vein = 0
+
+    precision_eva_vessel = 0
+    recall_eva_vessel = 0
+    accuracy_eva_vessel = 0
+    iou_eva_vessel = 0
+    f1_eva_vessel = 0
+
+    sensitivity_eva_vessel = 0
+    specificity_eva_vessel = 0
+    auc_roc_eva_vessel = 0
+    auc_pr_eva_vessel = 0
+    mse_eva_vessel = 0
+    g_eva_vessel = 0
+
+    precision_eva_uncertain = 0
+    recall_eva_uncertain = 0
+    accuracy_eva_uncertain = 0
+    iou_eva_uncertain = 0
+    f1_eva_uncertain = 0
+
+    sensitivity_eva_uncertain = 0
+    specificity_eva_uncertain = 0
+    auc_roc_eva_uncertain = 0
+    auc_pr_eva_uncertain = 0
+    mse_eva_uncertain = 0
+    g_eva_uncertain = 0
+
     # with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
     for n, batch in enumerate(loader):
 
@@ -613,19 +665,42 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
         mask_artery = np.zeros([h, w], dtype=np.int8)
         prediction_artery[prediction == 1] = 1
         mask_artery[true_masks == 1] = 1
+
+        # artery_freq = 1 / artery_freq
         # vein
         prediction_vein = np.zeros([h, w], dtype=np.int8)
         mask_vein = np.zeros([h, w], dtype=np.int8)
         prediction_vein[prediction == 2] = 1
         mask_vein[true_masks == 2] = 1
 
+        # vein_freq = 1 / vein_freq
+        # uncertainty
+        prediction_uncertain = np.zeros([h, w], dtype=np.int8)
+        mask_uncertain = np.zeros([h, w], dtype=np.int8)
+        prediction_uncertain[prediction == 3] = 1
+        mask_uncertain[true_masks == 3] = 1
+
+        # uncertain_freq = 1 / uncertain_freq
+        # vessel
+        prediction_vessel = np.zeros([h, w], dtype=np.int8)
+        mask_vessel = np.zeros([h, w], dtype=np.int8)
+        prediction_vessel[prediction == 3] = 1
+        mask_vessel[true_masks == 3] = 1
+        prediction_vessel[prediction == 1] = 1
+        mask_vessel[true_masks == 1] = 1
+        prediction_vessel[prediction == 2] = 1
+        mask_vessel[true_masks == 2] = 1
+        #
+        # print(h*w)
+        # print(mask_artery.sum() + mask_vein.sum() + mask_uncertain.sum())
         # print(np.unique(prediction_artery))
         # print(np.unique(mask_artery))
 
         roi = roi.cpu().detach().numpy().squeeze()
 
         # print('ROI has values:')
-        # print(np.unique(roi))
+        # print(np.unique(roi, return_counts=True))
+        # print(roi.sum())
 
         # mask_artery[roi == 1.0] = mask_artery
         # prediction_artery[roi == 1.0] = prediction_artery
@@ -639,44 +714,103 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
         # prediction_vein = np.ma.masked_where(roi != 1.0, prediction_vein.squeeze())
 
         roi_index = np.where(roi == 1.0)
+
         mask_artery = mask_artery[roi_index]
         mask_vein = mask_vein[roi_index]
+        mask_uncertain = mask_uncertain[roi_index]
+        mask_vessel = mask_vessel[roi_index]
 
         prediction_artery = prediction_artery[roi_index]
         prediction_vein = prediction_vein[roi_index]
+        prediction_uncertain = prediction_uncertain[roi_index]
+        prediction_vessel = prediction_vessel[roi_index]
 
+        artery_freq = mask_artery.sum() / mask_vessel.sum()
+        vein_freq = mask_vein.sum() / mask_vessel.sum()
+        uncertain_freq = mask_uncertain.sum() / mask_vessel.sum()
+
+        # print(mask_artery.sum())
+        # print(mask_vein.sum())
+        # print(mask_uncertain.sum())
+        # print(roi.sum())
+
+        # print(artery_freq + vein_freq + uncertain_freq)
         # print(np.shape(mask_artery))
 
-        f1_artery, recall_artery, __ = f1_score(label_gt=mask_artery.flatten(), label_pred=prediction_artery.flatten(), n_class=2)
-        iou_artery, _ = intersectionAndUnion(imLab=mask_artery.flatten(), imPred=prediction_artery.flatten(), numClass=2)
+        f1_artery, recall_artery, __ = f1_score(label_gt=mask_artery, label_pred=prediction_artery, n_class=2)
+        iou_artery, _ = intersectionAndUnion(imLab=mask_artery, imPred=prediction_artery, numClass=2)
 
-        f1_vein, recall_vein, __ = f1_score(label_gt=mask_vein.flatten(), label_pred=prediction_vein.flatten(), n_class=2)
-        iou_vein, _ = intersectionAndUnion(imLab=mask_vein.flatten(), imPred=prediction_vein.flatten(), numClass=2)
+        f1_vein, recall_vein, __ = f1_score(label_gt=mask_vein, label_pred=prediction_vein, n_class=2)
+        iou_vein, _ = intersectionAndUnion(imLab=mask_vein, imPred=prediction_vein, numClass=2)
+
+        f1_uncertain, recall_uncertain, __ = f1_score(label_gt=mask_uncertain, label_pred=prediction_uncertain, n_class=2)
+        iou_uncertain, _ = intersectionAndUnion(imLab=mask_uncertain, imPred=prediction_uncertain, numClass=2)
+
+        f1_vessel, recall_vessel, __ = f1_score(label_gt=mask_vessel, label_pred=prediction_vessel, n_class=2)
+        iou_vessel, _ = intersectionAndUnion(imLab=mask_vessel, imPred=prediction_vessel, numClass=2)
 
         acc_artery, sensitivity_artery, specificity_artery, precision_artery, G_artery, ___ = misc_measures(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
         acc_vein, sensitivity_vein, specificity_vein, precision_vein, G_vein, ___ = misc_measures(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
+        acc_uncertain, sensitivity_uncertain, specificity_uncertain, precision_uncertain, G_uncertain, ___ = misc_measures(true_vessel_arr=mask_uncertain, pred_vessel_arr=prediction_uncertain)
+        acc_vessel, sensitivity_vessel, specificity_vessel, precision_vessel, G_vessel, ___ = misc_measures(true_vessel_arr=mask_vessel, pred_vessel_arr=prediction_vessel)
 
         auc_roc_artery = AUC_ROC(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
         auc_roc_vein = AUC_ROC(true_vessel_arr=mask_vein, pred_vessel_arr=prediction_vein)
+        auc_roc_vessel = AUC_ROC(true_vessel_arr=mask_vessel, pred_vessel_arr=prediction_vessel)
+        auc_roc_uncertain = AUC_ROC(true_vessel_arr=mask_uncertain, pred_vessel_arr=prediction_uncertain)
 
         auc_pr_artery = AUC_PR(true_vessel_img=mask_artery, pred_vessel_img=prediction_artery)
         auc_pr_vein = AUC_PR(true_vessel_img=mask_vein, pred_vessel_img=prediction_vein)
+        auc_pr_uncertain = AUC_PR(true_vessel_img=mask_uncertain, pred_vessel_img=prediction_uncertain)
+        auc_pr_vessel = AUC_PR(true_vessel_img=mask_vessel, pred_vessel_img=prediction_vessel)
 
         mse_artery = mean_squared_error(mask_artery, prediction_artery)
         mse_vein = mean_squared_error(mask_vein, prediction_vein)
+        mse_vessel = mean_squared_error(mask_vessel, prediction_vessel)
+        mse_uncertain = mean_squared_error(mask_uncertain, prediction_uncertain)
 
-        f1_ = (f1_artery + f1_vein) / 2
-        recall_ = (recall_artery + recall_vein) / 2
-        precision_ = (precision_artery + precision_vein) / 2
-        iou_ = (iou_artery + iou_vein) / 2
-        acc_ = (acc_artery + acc_vein) / 2
-        mse_ = (mse_artery + mse_vein) / 2
+        # f1_ = (f1_artery + f1_vein) / 2
+        # recall_ = (recall_artery + recall_vein) / 2
+        # precision_ = (precision_artery + precision_vein) / 2
+        # iou_ = (iou_artery + iou_vein) / 2
+        # acc_ = (acc_artery + acc_vein) / 2
+        # mse_ = (mse_artery + mse_vein) / 2
+        #
+        # G_ = (G_artery + G_vein) / 2
+        # specificity_ = (specificity_artery + specificity_vein) / 2
+        # sensitivity_ = (sensitivity_artery + sensitivity_vein) / 2
+        # auc_roc_ = (auc_roc_artery + auc_roc_vein) / 2
+        # auc_pr_ = (auc_pr_artery + auc_pr_vein) / 2
 
-        G_ = (G_artery + G_vein) / 2
-        specificity_ = (specificity_artery + specificity_vein) / 2
-        sensitivity_ = (sensitivity_artery + sensitivity_vein) / 2
-        auc_roc_ = (auc_roc_artery + auc_roc_vein) / 2
-        auc_pr_ = (auc_pr_artery + auc_pr_vein) / 2
+        # =====================
+        # all:
+        # =====================
+        # print('sanity check of weights:')
+        # print(artery_freq+vein_freq+uncertain_freq)
+        f1_ = artery_freq*f1_artery + f1_vein*vein_freq + f1_uncertain*uncertain_freq
+        recall_ = recall_artery*artery_freq + recall_vein*vein_freq + recall_uncertain*uncertain_freq
+        precision_ = precision_artery*artery_freq + precision_vein + precision_uncertain*uncertain_freq
+        iou_ = iou_artery*artery_freq + iou_vein*vein_freq + iou_uncertain*uncertain_freq
+        acc_ = acc_artery*artery_freq + acc_vein*vein_freq + acc_uncertain*uncertain_freq
+        mse_ = mse_artery*artery_freq + mse_vein*vein_freq + mse_uncertain*uncertain_freq
+
+        G_ = G_artery*artery_freq + G_vein*vein_freq + G_uncertain*uncertain_freq
+        specificity_ = specificity_artery*artery_freq + specificity_vein*vein_freq + specificity_uncertain*uncertain_freq
+        sensitivity_ = sensitivity_artery*artery_freq + sensitivity_vein*vein_freq + sensitivity_uncertain*uncertain_freq
+        auc_roc_ = auc_roc_artery*artery_freq + auc_roc_vein*vein_freq + auc_roc_uncertain*uncertain_freq
+        auc_pr_ = auc_pr_artery*artery_freq + auc_pr_vein*vein_freq + auc_pr_uncertain*uncertain_freq
+
+        # f1_ = f1_artery + f1_vein + f1_uncertain
+        # recall_ = recall_artery + recall_vein + recall_uncertain
+        # precision_ = precision_artery + precision_vein + precision_uncertain
+        # iou_ = iou_artery + iou_vein + iou_uncertain
+        # acc_ = acc_artery + acc_vein + acc_uncertain
+        # mse_ = mse_artery + mse_vein + mse_uncertain
+        # G_ = G_artery + G_vein + G_uncertain
+        # specificity_ = specificity_artery + specificity_vein + specificity_uncertain
+        # sensitivity_ = sensitivity_artery + sensitivity_vein + sensitivity_uncertain
+        # auc_roc_ = auc_roc_artery + auc_roc_vein + auc_roc_uncertain
+        # auc_pr_ = auc_pr_artery + auc_pr_vein + auc_pr_uncertain
 
         f1_eva += f1_
         recall_eva += recall_
@@ -689,6 +823,63 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
         auc_roc_eva += auc_roc_
         auc_pr_eva += auc_pr_
         mse_eva += mse_
+
+        # f1_eva += f1_/3
+        # recall_eva += recall_/3
+        # precision_eva += precision_/3
+        # iou_eva += iou_/3
+        # accuracy_eva += acc_/3
+        # g_eva += G_/3
+        # sensitivity_eva += sensitivity_/3
+        # specificity_eva += specificity_/3
+        # auc_roc_eva += auc_roc_/3
+        # auc_pr_eva += auc_pr_/3
+        # mse_eva += mse_/3
+
+        # =====================
+        # vein:
+        # =====================
+        f1_eva_vein += f1_vein
+        recall_eva_vein += recall_vein
+        precision_eva_vein += precision_vein
+        iou_eva_vein += iou_vein
+        accuracy_eva_vein += acc_vein
+        g_eva_vein += G_vein
+        sensitivity_eva_vein += sensitivity_vein
+        specificity_eva_vein += specificity_vein
+        auc_roc_eva_vein += auc_roc_vein
+        auc_pr_eva_vein += auc_pr_vein
+        mse_eva_vein += mse_vein
+
+        # =====================
+        # artery:
+        # =====================
+        f1_eva_artery += f1_artery
+        recall_eva_artery += recall_artery
+        precision_eva_artery += precision_artery
+        iou_eva_artery += iou_artery
+        accuracy_eva_artery += acc_artery
+        g_eva_artery += G_artery
+        sensitivity_eva_artery += sensitivity_artery
+        specificity_eva_artery += specificity_artery
+        auc_roc_eva_artery += auc_roc_artery
+        auc_pr_eva_artery += auc_pr_artery
+        mse_eva_artery += mse_artery
+
+        # =====================
+        # vessel:
+        # =====================
+        f1_eva_vessel += f1_vessel
+        recall_eva_vessel += recall_vessel
+        precision_eva_vessel += precision_vessel
+        iou_eva_vessel += iou_vessel
+        accuracy_eva_vessel += acc_vessel
+        g_eva_vessel += G_vessel
+        sensitivity_eva_vessel += sensitivity_vessel
+        specificity_eva_vessel += specificity_vessel
+        auc_roc_eva_vessel += auc_roc_vessel
+        auc_pr_eva_vessel += auc_pr_vessel
+        mse_eva_vessel += mse_vessel
             ##################sigmoid or softmax
         '''
         if net.n_classes > 1:
@@ -776,7 +967,10 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
 
     net.train()
 
-    return accuracy_eva/(n+1), iou_eva/(n+1), precision_eva/(n+1), recall_eva/(n+1), f1_eva/(n+1), specificity_eva / (n+1), sensitivity_eva / (n+1), g_eva/(n+1), auc_pr_eva/(n+1), auc_roc_eva/(n+1), mse_eva/(n+1)
+    return accuracy_eva/(n+1), iou_eva/(n+1), precision_eva/(n+1), recall_eva/(n+1), f1_eva/(n+1), specificity_eva / (n+1), sensitivity_eva / (n+1), g_eva/(n+1), auc_pr_eva/(n+1), auc_roc_eva/(n+1), mse_eva/(n+1), \
+           accuracy_eva_artery/(n+1), iou_eva_artery/(n+1), precision_eva_artery/(n+1), recall_eva_artery/(n+1), f1_eva_artery/(n+1), specificity_eva_artery / (n+1), sensitivity_eva_artery / (n+1), g_eva_artery/(n+1), auc_pr_eva_artery/(n+1), auc_roc_eva_artery/(n+1), mse_eva_artery/(n+1), \
+           accuracy_eva_vein/(n+1), iou_eva_vein/(n+1), precision_eva_vein/(n+1), recall_eva_vein/(n+1), f1_eva_vein/(n+1), specificity_eva_vein / (n+1), sensitivity_eva_vein / (n+1), g_eva_vein/(n+1), auc_pr_eva_vein/(n+1), auc_roc_eva_vein/(n+1), mse_eva_vein/(n+1), \
+           accuracy_eva_vessel/(n+1), iou_eva_vessel/(n+1), precision_eva_vessel/(n+1), recall_eva_vessel/(n+1), f1_eva_vessel/(n+1), specificity_eva_vessel / (n+1), sensitivity_eva_vessel / (n+1), g_eva_vessel/(n+1), auc_pr_eva_vessel/(n+1), auc_roc_eva_vessel/(n+1), mse_eva_vessel/(n+1)
 
     # if mode == 'vessel':
     #

@@ -1,14 +1,67 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# =====================================================
-# Multi-task Neural Networks with Spatial
-# Activation for Retinal Vessel
-# Segmentation and Artery/Vein
-# Classification
-# MICCAI 2019
-# Wenao Ma, Shuang Yu, Kai Ma, Jiexiang Wang and et al
-# ====================================================
+
+
+class ContextPath(nn.Module):
+
+    def __init__(self, in_channels, out_channels, step):
+
+        super(ContextPath, self).__init__()
+
+        self.branch1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, stride=step, padding=0, bias=False),
+            nn.BatchNorm2d(num_features=out_channels, affine=True),
+            nn.ReLU(inplace=True)
+        )
+
+        self.branch2 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, stride=step, padding=0, bias=False),
+            nn.BatchNorm2d(num_features=out_channels, affine=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(num_features=out_channels, affine=True),
+            nn.ReLU(inplace=True)
+        )
+
+        self.branch3 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, stride=step, padding=0, bias=False),
+            nn.BatchNorm2d(num_features=out_channels, affine=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(num_features=out_channels, affine=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(num_features=out_channels, affine=True),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+
+        output = self.branch1(x) + self.branch2(x) + self.branch3(x)
+
+        return output
+
+
+class AttentionSkip(nn.Module):
+
+    def __init__(self, in_channels):
+
+        super(AttentionSkip, self).__init__()
+
+        self.branch1 = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_channels=in_channels, out_channels=in_channels//8, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=in_channels//8, out_channels=in_channels, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+
+        output = self.branch1(x) * x
+
+        return output
 
 
 class ConvBlock(nn.Module):
@@ -145,7 +198,14 @@ class OutputBlock(nn.Module):
 
 
 class MTSARVSnet(nn.Module):
-
+    # =====================================================
+    # Multi-task Neural Networks with Spatial
+    # Activation for Retinal Vessel
+    # Segmentation and Artery/Vein
+    # Classification
+    # MICCAI 2019
+    # Wenao Ma, Shuang Yu, Kai Ma, Jiexiang Wang and et al
+    # ====================================================
     def __init__(self, input_dim, output_dim, width=16):
 
         super(MTSARVSnet, self).__init__()
@@ -328,20 +388,33 @@ class DualAttUNet(nn.Module):
         self.w4 = width * 8
         #
         self.econv0 = single_conv(in_channels=in_ch, out_channels=self.w1, step=1)
+        self.econv0_skip = nn.Conv2d(in_channels=in_ch, out_channels=self.w1, kernel_size=1, stride=1, bias=False)
+
         self.econv1 = double_conv(in_channels=self.w1, out_channels=self.w2, step=2)
+        self.econv1_skip = nn.Conv2d(in_channels=self.w1, out_channels=self.w2, kernel_size=1, stride=2, bias=False)
+
         self.econv2 = double_conv(in_channels=self.w2, out_channels=self.w3, step=2)
+        self.econv2_skip = nn.Conv2d(in_channels=self.w2, out_channels=self.w3, kernel_size=1, stride=2, bias=False)
+
         self.econv3 = double_conv(in_channels=self.w3, out_channels=self.w4, step=2)
+        self.econv3_skip = nn.Conv2d(in_channels=self.w3, out_channels=self.w4, kernel_size=1, stride=2, bias=False)
         #
         self.bridge_spatial1 = nn.Conv2d(self.w4, self.w1, 1, bias=False)
         self.bridge_spatial1_q = single_conv(in_channels=self.w1, out_channels=self.w1, step=1)
         self.bridge_spatial1_k = single_conv(in_channels=self.w1, out_channels=self.w1, step=1)
         self.bridge_spatial2 = nn.Conv2d(self.w1, self.w4, 1, bias=False)
         self.bridge_channel = nn.Conv2d(self.w4, self.w4, 1, bias=False)
-        # self.bridge = double_conv(in_channels=self.w4, out_channels=self.w4, step=1)
+        self.bridge = double_conv(in_channels=self.w4, out_channels=self.w4, step=1)
         #
         self.dconv3 = double_conv(in_channels=self.w4+self.w4, out_channels=self.w3, step=1)
+        self.dconv3_skip = nn.Conv2d(in_channels=self.w4+self.w4, out_channels=self.w3, kernel_size=1, stride=1, bias=False)
+
         self.dconv2 = double_conv(in_channels=self.w3+self.w3, out_channels=self.w2, step=1)
+        self.dconv2_skip = nn.Conv2d(in_channels=self.w3 + self.w3, out_channels=self.w2, kernel_size=1, stride=1, bias=False)
+
         self.dconv1 = double_conv(in_channels=self.w2+self.w2, out_channels=self.w1, step=1)
+        self.dconv1_skip = nn.Conv2d(in_channels=self.w2 + self.w2, out_channels=self.w1, kernel_size=1, stride=1, bias=False)
+
         self.dconv0 = double_conv(in_channels=self.w1+self.w1, out_channels=self.w1, step=1)
         #
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
@@ -349,13 +422,14 @@ class DualAttUNet(nn.Module):
 
     def forward(self, x):
 
-        x0 = self.econv0(x)
-        x1 = self.econv1(x0)
-        x2 = self.econv2(x1)
-        x3 = self.econv3(x2)
+        x0 = self.econv0(x) + self.econv0_skip(x)
+        x1 = self.econv1(x0) + self.econv1_skip(x0)
+        x2 = self.econv2(x1) + self.econv2_skip(x1)
+        x3 = self.econv3(x2) + self.econv3_skip(x2)
+        x4 = self.bridge(x3)
 
-        x4_spatial = self.bridge_spatial1(x3)
-        x4_channel = self.bridge_channel(x3)
+        x4_spatial = self.bridge_spatial1(x4)
+        x4_channel = self.bridge_channel(x4)
 
         b, c, h, w = x4_spatial.size()
 
@@ -405,13 +479,13 @@ class DualAttUNet(nn.Module):
             y = F.pad(y, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
 
         y3 = torch.cat([y, x3], dim=1)
-        y3 = self.dconv3(y3)
+        y3 = self.dconv3(y3) + self.dconv3_skip(y3)
         y2 = self.upsample(y3)
         y2 = torch.cat([y2, x2], dim=1)
-        y2 = self.dconv2(y2)
+        y2 = self.dconv2(y2) + self.dconv2_skip(y2)
         y1 = self.upsample(y2)
         y1 = torch.cat([y1, x1], dim=1)
-        y1 = self.dconv1(y1)
+        y1 = self.dconv1(y1) + self.dconv1_skip(y1)
         y0 = self.upsample(y1)
         y0 = torch.cat([y0, x0], dim=1)
         y0 = self.dconv0(y0)
