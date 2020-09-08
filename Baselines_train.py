@@ -909,6 +909,12 @@ def trainSingleModel(model,
 
                 print(save_model_name + '_' + str(epoch) + 'saved')
 
+    save_model_name_full = saved_model_path + '/' + save_model_name + '_Final.pt'
+    #
+    path_model = save_model_name_full
+    #
+    torch.save(model, path_model)
+
     # # ===============
     # Testing:
     # =================
@@ -1362,11 +1368,11 @@ def trainSingleModel(model,
     #
     print('Time: ', stop - start)
     #
-    save_model_name_full = saved_model_path + '/' + save_model_name + '_Final.pt'
-    #
-    path_model = save_model_name_full
-    #
-    torch.save(model, path_model)
+    # save_model_name_full = saved_model_path + '/' + save_model_name + '_Final.pt'
+    # #
+    # path_model = save_model_name_full
+    # #
+    # torch.save(model, path_model)
     #
     print('\nTraining finished and final model saved\n')
     #

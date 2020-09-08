@@ -737,153 +737,160 @@ def eval_net_multitask(epoch, net, loader, device, mask, mode, model_name):
         # print(artery_freq + vein_freq + uncertain_freq)
         # print(np.shape(mask_artery))
 
-        f1_artery, recall_artery, __ = f1_score(label_gt=mask_artery, label_pred=prediction_artery, n_class=2)
-        iou_artery, _ = intersectionAndUnion(imLab=mask_artery, imPred=prediction_artery, numClass=2)
+        _, recall_artery, __ = f1_score(label_gt=mask_artery, label_pred=prediction_artery, n_class=2)
+        # iou_artery, _ = intersectionAndUnion(imLab=mask_artery, imPred=prediction_artery, numClass=2)
 
-        f1_vein, recall_vein, __ = f1_score(label_gt=mask_vein, label_pred=prediction_vein, n_class=2)
-        iou_vein, _ = intersectionAndUnion(imLab=mask_vein, imPred=prediction_vein, numClass=2)
+        _, recall_vein, __ = f1_score(label_gt=mask_vein, label_pred=prediction_vein, n_class=2)
+        # iou_vein, _ = intersectionAndUnion(imLab=mask_vein, imPred=prediction_vein, numClass=2)
 
-        f1_uncertain, recall_uncertain, __ = f1_score(label_gt=mask_uncertain, label_pred=prediction_uncertain, n_class=2)
-        iou_uncertain, _ = intersectionAndUnion(imLab=mask_uncertain, imPred=prediction_uncertain, numClass=2)
+        _, recall_uncertain, __ = f1_score(label_gt=mask_uncertain, label_pred=prediction_uncertain, n_class=2)
+        # iou_uncertain, _ = intersectionAndUnion(imLab=mask_uncertain, imPred=prediction_uncertain, numClass=2)
 
-        f1_vessel, recall_vessel, __ = f1_score(label_gt=mask_vessel, label_pred=prediction_vessel, n_class=2)
-        iou_vessel, _ = intersectionAndUnion(imLab=mask_vessel, imPred=prediction_vessel, numClass=2)
+        _, recall_vessel, __ = f1_score(label_gt=mask_vessel, label_pred=prediction_vessel, n_class=2)
+        # iou_vessel, _ = intersectionAndUnion(imLab=mask_vessel, imPred=prediction_vessel, numClass=2)
 
-        acc_artery, sensitivity_artery, specificity_artery, precision_artery, G_artery, ___ = misc_measures(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
-        acc_vein, sensitivity_vein, specificity_vein, precision_vein, G_vein, ___ = misc_measures(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
-        acc_uncertain, sensitivity_uncertain, specificity_uncertain, precision_uncertain, G_uncertain, ___ = misc_measures(true_vessel_arr=mask_uncertain, pred_vessel_arr=prediction_uncertain)
-        acc_vessel, sensitivity_vessel, specificity_vessel, precision_vessel, G_vessel, ___ = misc_measures(true_vessel_arr=mask_vessel, pred_vessel_arr=prediction_vessel)
+        # print(np.shape(mask_artery))
 
-        auc_roc_artery = AUC_ROC(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
-        auc_roc_vein = AUC_ROC(true_vessel_arr=mask_vein, pred_vessel_arr=prediction_vein)
-        auc_roc_vessel = AUC_ROC(true_vessel_arr=mask_vessel, pred_vessel_arr=prediction_vessel)
-        auc_roc_uncertain = AUC_ROC(true_vessel_arr=mask_uncertain, pred_vessel_arr=prediction_uncertain)
+        # print(np.shape(prediction_artery))
 
-        auc_pr_artery = AUC_PR(true_vessel_img=mask_artery, pred_vessel_img=prediction_artery)
-        auc_pr_vein = AUC_PR(true_vessel_img=mask_vein, pred_vessel_img=prediction_vein)
-        auc_pr_uncertain = AUC_PR(true_vessel_img=mask_uncertain, pred_vessel_img=prediction_uncertain)
-        auc_pr_vessel = AUC_PR(true_vessel_img=mask_vessel, pred_vessel_img=prediction_vessel)
+        # print(mask_artery.size)
+        if mask_artery.size != 0 and prediction_artery.size != 0 and mask_vein.size != 0 and prediction_vein.size != 0 and mask_vessel.size != 0 and prediction_vessel.size != 0:
 
-        mse_artery = mean_squared_error(mask_artery, prediction_artery)
-        mse_vein = mean_squared_error(mask_vein, prediction_vein)
-        mse_vessel = mean_squared_error(mask_vessel, prediction_vessel)
-        mse_uncertain = mean_squared_error(mask_uncertain, prediction_uncertain)
+            acc_artery, sensitivity_artery, specificity_artery, precision_artery, G_artery, f1_artery, mse_artery, iou_artery = misc_measures(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
+            acc_vein, sensitivity_vein, specificity_vein, precision_vein, G_vein, f1_vein, mse_vein, iou_vein = misc_measures(true_vessel_arr=mask_vein, pred_vessel_arr=prediction_vein)
+            acc_uncertain, sensitivity_uncertain, specificity_uncertain, precision_uncertain, G_uncertain, f1_uncertain, mse_uncertain, iou_uncertain = misc_measures(true_vessel_arr=mask_uncertain, pred_vessel_arr=prediction_uncertain)
+            acc_vessel, sensitivity_vessel, specificity_vessel, precision_vessel, G_vessel, f1_vessel, mse_vessel, iou_vessel = misc_measures(true_vessel_arr=mask_vessel, pred_vessel_arr=prediction_vessel)
 
-        # f1_ = (f1_artery + f1_vein) / 2
-        # recall_ = (recall_artery + recall_vein) / 2
-        # precision_ = (precision_artery + precision_vein) / 2
-        # iou_ = (iou_artery + iou_vein) / 2
-        # acc_ = (acc_artery + acc_vein) / 2
-        # mse_ = (mse_artery + mse_vein) / 2
-        #
-        # G_ = (G_artery + G_vein) / 2
-        # specificity_ = (specificity_artery + specificity_vein) / 2
-        # sensitivity_ = (sensitivity_artery + sensitivity_vein) / 2
-        # auc_roc_ = (auc_roc_artery + auc_roc_vein) / 2
-        # auc_pr_ = (auc_pr_artery + auc_pr_vein) / 2
+            auc_roc_artery = AUC_ROC(true_vessel_arr=mask_artery, pred_vessel_arr=prediction_artery)
+            auc_roc_vein = AUC_ROC(true_vessel_arr=mask_vein, pred_vessel_arr=prediction_vein)
+            auc_roc_vessel = AUC_ROC(true_vessel_arr=mask_vessel, pred_vessel_arr=prediction_vessel)
+            auc_roc_uncertain = AUC_ROC(true_vessel_arr=mask_uncertain, pred_vessel_arr=prediction_uncertain)
 
-        # =====================
-        # all:
-        # =====================
-        # print('sanity check of weights:')
-        # print(artery_freq+vein_freq+uncertain_freq)
-        f1_ = artery_freq*f1_artery + f1_vein*vein_freq + f1_uncertain*uncertain_freq
-        recall_ = recall_artery*artery_freq + recall_vein*vein_freq + recall_uncertain*uncertain_freq
-        precision_ = precision_artery*artery_freq + precision_vein + precision_uncertain*uncertain_freq
-        iou_ = iou_artery*artery_freq + iou_vein*vein_freq + iou_uncertain*uncertain_freq
-        acc_ = acc_artery*artery_freq + acc_vein*vein_freq + acc_uncertain*uncertain_freq
-        mse_ = mse_artery*artery_freq + mse_vein*vein_freq + mse_uncertain*uncertain_freq
+            auc_pr_artery = AUC_PR(true_vessel_img=mask_artery, pred_vessel_img=prediction_artery)
+            auc_pr_vein = AUC_PR(true_vessel_img=mask_vein, pred_vessel_img=prediction_vein)
+            auc_pr_uncertain = AUC_PR(true_vessel_img=mask_uncertain, pred_vessel_img=prediction_uncertain)
+            auc_pr_vessel = AUC_PR(true_vessel_img=mask_vessel, pred_vessel_img=prediction_vessel)
 
-        G_ = G_artery*artery_freq + G_vein*vein_freq + G_uncertain*uncertain_freq
-        specificity_ = specificity_artery*artery_freq + specificity_vein*vein_freq + specificity_uncertain*uncertain_freq
-        sensitivity_ = sensitivity_artery*artery_freq + sensitivity_vein*vein_freq + sensitivity_uncertain*uncertain_freq
-        auc_roc_ = auc_roc_artery*artery_freq + auc_roc_vein*vein_freq + auc_roc_uncertain*uncertain_freq
-        auc_pr_ = auc_pr_artery*artery_freq + auc_pr_vein*vein_freq + auc_pr_uncertain*uncertain_freq
+            mse_artery = mean_squared_error(mask_artery, prediction_artery)
+            mse_vein = mean_squared_error(mask_vein, prediction_vein)
+            mse_vessel = mean_squared_error(mask_vessel, prediction_vessel)
+            mse_uncertain = mean_squared_error(mask_uncertain, prediction_uncertain)
 
-        # f1_ = f1_artery + f1_vein + f1_uncertain
-        # recall_ = recall_artery + recall_vein + recall_uncertain
-        # precision_ = precision_artery + precision_vein + precision_uncertain
-        # iou_ = iou_artery + iou_vein + iou_uncertain
-        # acc_ = acc_artery + acc_vein + acc_uncertain
-        # mse_ = mse_artery + mse_vein + mse_uncertain
-        # G_ = G_artery + G_vein + G_uncertain
-        # specificity_ = specificity_artery + specificity_vein + specificity_uncertain
-        # sensitivity_ = sensitivity_artery + sensitivity_vein + sensitivity_uncertain
-        # auc_roc_ = auc_roc_artery + auc_roc_vein + auc_roc_uncertain
-        # auc_pr_ = auc_pr_artery + auc_pr_vein + auc_pr_uncertain
+            # f1_ = (f1_artery + f1_vein) / 2
+            # recall_ = (recall_artery + recall_vein) / 2
+            # precision_ = (precision_artery + precision_vein) / 2
+            # iou_ = (iou_artery + iou_vein) / 2
+            # acc_ = (acc_artery + acc_vein) / 2
+            # mse_ = (mse_artery + mse_vein) / 2
+            #
+            # G_ = (G_artery + G_vein) / 2
+            # specificity_ = (specificity_artery + specificity_vein) / 2
+            # sensitivity_ = (sensitivity_artery + sensitivity_vein) / 2
+            # auc_roc_ = (auc_roc_artery + auc_roc_vein) / 2
+            # auc_pr_ = (auc_pr_artery + auc_pr_vein) / 2
 
-        f1_eva += f1_
-        recall_eva += recall_
-        precision_eva += precision_
-        iou_eva += iou_
-        accuracy_eva += acc_
-        g_eva += G_
-        sensitivity_eva += sensitivity_
-        specificity_eva += specificity_
-        auc_roc_eva += auc_roc_
-        auc_pr_eva += auc_pr_
-        mse_eva += mse_
+            # =====================
+            # all:
+            # =====================
+            # print('sanity check of weights:')
+            # print(artery_freq+vein_freq+uncertain_freq)
+            f1_ = artery_freq*f1_artery + f1_vein*vein_freq + f1_uncertain*uncertain_freq
+            recall_ = recall_artery*artery_freq + recall_vein*vein_freq + recall_uncertain*uncertain_freq
+            precision_ = precision_artery*artery_freq + precision_vein + precision_uncertain*uncertain_freq
+            iou_ = iou_artery*artery_freq + iou_vein*vein_freq + iou_uncertain*uncertain_freq
+            acc_ = acc_artery*artery_freq + acc_vein*vein_freq + acc_uncertain*uncertain_freq
+            mse_ = mse_artery*artery_freq + mse_vein*vein_freq + mse_uncertain*uncertain_freq
 
-        # f1_eva += f1_/3
-        # recall_eva += recall_/3
-        # precision_eva += precision_/3
-        # iou_eva += iou_/3
-        # accuracy_eva += acc_/3
-        # g_eva += G_/3
-        # sensitivity_eva += sensitivity_/3
-        # specificity_eva += specificity_/3
-        # auc_roc_eva += auc_roc_/3
-        # auc_pr_eva += auc_pr_/3
-        # mse_eva += mse_/3
+            G_ = G_artery*artery_freq + G_vein*vein_freq + G_uncertain*uncertain_freq
+            specificity_ = specificity_artery*artery_freq + specificity_vein*vein_freq + specificity_uncertain*uncertain_freq
+            sensitivity_ = sensitivity_artery*artery_freq + sensitivity_vein*vein_freq + sensitivity_uncertain*uncertain_freq
+            auc_roc_ = auc_roc_artery*artery_freq + auc_roc_vein*vein_freq + auc_roc_uncertain*uncertain_freq
+            auc_pr_ = auc_pr_artery*artery_freq + auc_pr_vein*vein_freq + auc_pr_uncertain*uncertain_freq
 
-        # =====================
-        # vein:
-        # =====================
-        f1_eva_vein += f1_vein
-        recall_eva_vein += recall_vein
-        precision_eva_vein += precision_vein
-        iou_eva_vein += iou_vein
-        accuracy_eva_vein += acc_vein
-        g_eva_vein += G_vein
-        sensitivity_eva_vein += sensitivity_vein
-        specificity_eva_vein += specificity_vein
-        auc_roc_eva_vein += auc_roc_vein
-        auc_pr_eva_vein += auc_pr_vein
-        mse_eva_vein += mse_vein
+            # f1_ = f1_artery + f1_vein + f1_uncertain
+            # recall_ = recall_artery + recall_vein + recall_uncertain
+            # precision_ = precision_artery + precision_vein + precision_uncertain
+            # iou_ = iou_artery + iou_vein + iou_uncertain
+            # acc_ = acc_artery + acc_vein + acc_uncertain
+            # mse_ = mse_artery + mse_vein + mse_uncertain
+            # G_ = G_artery + G_vein + G_uncertain
+            # specificity_ = specificity_artery + specificity_vein + specificity_uncertain
+            # sensitivity_ = sensitivity_artery + sensitivity_vein + sensitivity_uncertain
+            # auc_roc_ = auc_roc_artery + auc_roc_vein + auc_roc_uncertain
+            # auc_pr_ = auc_pr_artery + auc_pr_vein + auc_pr_uncertain
 
-        # =====================
-        # artery:
-        # =====================
-        f1_eva_artery += f1_artery
-        recall_eva_artery += recall_artery
-        precision_eva_artery += precision_artery
-        iou_eva_artery += iou_artery
-        accuracy_eva_artery += acc_artery
-        g_eva_artery += G_artery
-        sensitivity_eva_artery += sensitivity_artery
-        specificity_eva_artery += specificity_artery
-        auc_roc_eva_artery += auc_roc_artery
-        auc_pr_eva_artery += auc_pr_artery
-        mse_eva_artery += mse_artery
+            f1_eva += f1_
+            recall_eva += recall_
+            precision_eva += precision_
+            iou_eva += iou_
+            accuracy_eva += acc_
+            g_eva += G_
+            sensitivity_eva += sensitivity_
+            specificity_eva += specificity_
+            auc_roc_eva += auc_roc_
+            auc_pr_eva += auc_pr_
+            mse_eva += mse_
 
-        # =====================
-        # vessel:
-        # =====================
-        f1_eva_vessel += f1_vessel
-        recall_eva_vessel += recall_vessel
-        precision_eva_vessel += precision_vessel
-        iou_eva_vessel += iou_vessel
-        accuracy_eva_vessel += acc_vessel
-        g_eva_vessel += G_vessel
-        sensitivity_eva_vessel += sensitivity_vessel
-        specificity_eva_vessel += specificity_vessel
-        auc_roc_eva_vessel += auc_roc_vessel
-        auc_pr_eva_vessel += auc_pr_vessel
-        mse_eva_vessel += mse_vessel
-            ##################sigmoid or softmax
-        '''
-        if net.n_classes > 1:
-            tot += F.cross_entropy(mask_pred, true_masks).item()
+            # f1_eva += f1_/3
+            # recall_eva += recall_/3
+            # precision_eva += precision_/3
+            # iou_eva += iou_/3
+            # accuracy_eva += acc_/3
+            # g_eva += G_/3
+            # sensitivity_eva += sensitivity_/3
+            # specificity_eva += specificity_/3
+            # auc_roc_eva += auc_roc_/3
+            # auc_pr_eva += auc_pr_/3
+            # mse_eva += mse_/3
+
+            # =====================
+            # vein:
+            # =====================
+            f1_eva_vein += f1_vein
+            recall_eva_vein += recall_vein
+            precision_eva_vein += precision_vein
+            iou_eva_vein += iou_vein
+            accuracy_eva_vein += acc_vein
+            g_eva_vein += G_vein
+            sensitivity_eva_vein += sensitivity_vein
+            specificity_eva_vein += specificity_vein
+            auc_roc_eva_vein += auc_roc_vein
+            auc_pr_eva_vein += auc_pr_vein
+            mse_eva_vein += mse_vein
+
+            # =====================
+            # artery:
+            # =====================
+            f1_eva_artery += f1_artery
+            recall_eva_artery += recall_artery
+            precision_eva_artery += precision_artery
+            iou_eva_artery += iou_artery
+            accuracy_eva_artery += acc_artery
+            g_eva_artery += G_artery
+            sensitivity_eva_artery += sensitivity_artery
+            specificity_eva_artery += specificity_artery
+            auc_roc_eva_artery += auc_roc_artery
+            auc_pr_eva_artery += auc_pr_artery
+            mse_eva_artery += mse_artery
+
+            # =====================
+            # vessel:
+            # =====================
+            f1_eva_vessel += f1_vessel
+            recall_eva_vessel += recall_vessel
+            precision_eva_vessel += precision_vessel
+            iou_eva_vessel += iou_vessel
+            accuracy_eva_vessel += acc_vessel
+            g_eva_vessel += G_vessel
+            sensitivity_eva_vessel += sensitivity_vessel
+            specificity_eva_vessel += specificity_vessel
+            auc_roc_eva_vessel += auc_roc_vessel
+            auc_pr_eva_vessel += auc_pr_vessel
+            mse_eva_vessel += mse_vessel
+                ##################sigmoid or softmax
+            '''
+            if net.n_classes > 1:
+                tot += F.cross_entropy(mask_pred, true_masks).item()
         '''
         # if net.n_classes == 0:
         #     tot += F.cross_entropy(mask_pred, true_masks).item()

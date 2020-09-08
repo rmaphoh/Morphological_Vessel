@@ -71,7 +71,370 @@ val_transformer = transforms.Compose([
 ])
 
 
-class MultiTaskDataset(Dataset):
+class MultiTaskDataset_LES_test(Dataset):
+
+    def __init__(self, imgs_dir, masks_dir_main, roi_mask_dir, img_size, train_or, mask_suffix=''):
+
+        self.imgs_dir = imgs_dir
+        self.masks_dir_main = masks_dir_main
+        self.roi_mask_dir = roi_mask_dir
+
+        self.train_or = train_or
+
+        self.mask_suffix = mask_suffix
+        self.img_size = img_size
+        # self.transform = transforms
+
+        self.ids = [splitext(file)[0] for file in listdir(imgs_dir)
+                    if not file.startswith('.')]
+        logging.info(f'Creating dataset with {(self.ids)} ')
+        logging.info(f'Creating dataset with {len(self.ids)} examples')
+
+    def __len__(self):
+        return len(self.ids)
+
+    @classmethod
+    def random_perturbation(self,imgs):
+        for i in range(imgs.shape[0]):
+            im=Image.fromarray(imgs[i,...].astype(np.uint8))
+            en=ImageEnhance.Color(im)
+            im=en.enhance(random.uniform(0.8,1.2))
+            imgs[i,...]= np.asarray(im).astype(np.float32)
+        return imgs
+
+    @classmethod
+    def pad_imgs(self, imgs, img_size):
+        img_h, img_w = imgs.shape[0], imgs.shape[1]
+        target_h, target_w = img_size[0], img_size[1]
+        if len(imgs.shape) == 3:
+            d = imgs.shape[2]
+            padded = np.zeros((target_h, target_w, d))
+        elif len(imgs.shape) == 2:
+            padded = np.zeros((target_h, target_w))
+        padded[(target_h - img_h) // 2:(target_h - img_h) // 2 + img_h, (target_w - img_w) // 2:(target_w - img_w) // 2 + img_w, ...] = imgs
+        # print(np.shape(padded))
+        return padded
+
+    # @classmethod
+    # def crop_imgs(self, imgs, mask_array1, mask_array2, module_array, img_size):
+    #     '''
+    #     :param imgs:
+    #     :param mask_array1: 1st_mannual
+    #     :param mask_array2: 2st mannual
+    #     :param module_array:
+    #     :param img_size:
+    #     :return:
+    #     '''
+    #     img_h, img_w = imgs.shape[0], imgs.shape[1]
+    #     target_h, target_w = 4 * img_size[0], 4 * img_size[1]
+    #     y_pos = np.random.randint(297, 1323, size=1)
+    #     x_pos = np.random.randint(297, 1147, size=1)
+    #
+    #     if len(imgs.shape) == 3:
+    #         d = imgs.shape[2]
+    #         padded_final_img = np.zeros((592, 592, d))
+    #         padded_final_label = np.zeros((592, 592, d))
+    #     elif len(imgs.shape) == 2:
+    #         padded_final_img = np.zeros((592, 592))
+    #         padded_final_module = np.zeros((592, 592))
+    #     '''
+    #     for i in range(1,3):
+    #         for j in range(1,3):
+    #             #padded_final[((i-1)*3+j-1)*imgs.shape[0]:(((i-1)*3+j)*imgs.shape[0])]=imgs[:,(i-1)*280+200:(i-1)*280+792,(j-1)*390+100:(j-1)*390+692,...]
+    #             padded_final[((i-1)*2+j-1)*imgs.shape[0]:(((i-1)*2+j)*imgs.shape[0]),...]=imgs[(i-1)*592+200:(i)*592+200,(j-1)*592+200:(j)*592+200,...]
+    #     '''
+    #     padded_final_img = imgs[(x_pos[0] - 296):(x_pos[0] + 296), y_pos[0] - 296:y_pos[0] + 296, ...]
+    #     padded_final_label1 = mask_array1[(x_pos[0] - 296):(x_pos[0] + 296), y_pos[0] - 296:y_pos[0] + 296, ...]
+    #     padded_final_label2 = mask_array2[(x_pos[0] - 296):(x_pos[0] + 296), y_pos[0] - 296:y_pos[0] + 296, ...]
+    #     padded_final_module = module_array[(x_pos[0] - 296):(x_pos[0] + 296), y_pos[0] - 296:y_pos[0] + 296, ...]
+    #
+    #     return padded_final_img, padded_final_label1, padded_final_label2, padded_final_module
+
+    @classmethod
+    def preprocess(self, pil_img, mask1, roi, img_size, train_or, k):
+        # w, h = pil_img.size
+        newW, newH = img_size[0], img_size[1]
+        assert newW > 0 and newH > 0, 'Scale is too small'
+        # pil_img = pil_img.resize((newW, newH))
+
+        img_array = np.array(pil_img)
+        roi = np.array(roi) / 255
+        mask_array1 = np.array(mask1) / 255
+        # mask_array2 = np.array(mask2) / 255
+
+        # img_array, mask_array1, mask_array2, module_array = self.crop_imgs(img_array, mask_array1, mask_array2, roi, img_size)
+
+        # img_array = self.pad_imgs(img_array, img_size)
+        # mask_array1 = self.pad_imgs(mask_array1, img_size)
+        # mask_array2 = self.pad_imgs(mask_array2, img_size)
+
+        # roi = self.pad_imgs(roi, img_size)
+
+        # print('@@@@@@@@@@@@@@', np.shape(img_array))
+        # print('@@@@@@@@@@@@@@', np.shape(mask_array1))
+        # print('@@@@@@@@@@@@@@', np.shape(mask_array2))
+
+        if train_or:
+            flipping_dice = np.random.random()
+            if flipping_dice <= 0.25:
+                # img_array = img_array[:, ::-1, :]  # flipped imgs
+                # mask_array1 = mask_array1[:, ::-1, :]
+                # mask_array2 = mask_array2[:, ::-1]
+                # flip x:
+                img_array = np.flip(img_array, axis=0).copy()
+                roi = np.flip(roi, axis=0).copy()
+                mask_array1 = np.flip(mask_array1, axis=0).copy()
+                # mask_array2 = np.flip(mask_array2, axis=0).copy()
+            elif flipping_dice <= 0.5:
+                img_array = np.flip(img_array, axis=1).copy()
+                mask_array1 = np.flip(mask_array1, axis=1).copy()
+                # mask_array2 = np.flip(mask_array2, axis=1).copy()
+                roi = np.flip(roi, axis=1).copy()
+            elif flipping_dice <= 0.75:
+                img_array = np.flip(img_array, axis=1).copy()
+                roi = np.flip(roi, axis=1).copy()
+                mask_array1 = np.flip(mask_array1, axis=1).copy()
+                # mask_array2 = np.flip(mask_array2, axis=1).copy()
+                img_array = np.flip(img_array, axis=0).copy()
+                mask_array1 = np.flip(mask_array1, axis=0).copy()
+                # mask_array2 = np.flip(mask_array2, axis=0).copy()
+                roi = np.flip(roi, axis=0).copy()
+
+            angle = 3 * np.random.randint(120)
+            img_array = rotate(img_array, angle, axes=(0, 1), reshape=False)
+            roi = rotate(roi, angle, axes=(0, 1), reshape=False)
+            # print('@@@@@@@@@@@@@@', np.shape(img_array))
+            # print('@@@@@@@@@@@@@@', np.shape(mask_array))
+
+            #
+
+            img_array = self.random_perturbation(img_array)
+            mask_array1 = np.round(rotate(mask_array1, angle, axes=(0, 1), reshape=False))
+            # mask_array2 = np.round(rotate(mask_array2, angle, axes=(0, 1), reshape=False))
+
+        # if train_or:
+        #     if np.random.random() > 0.5:
+        #         img_array = np.flip(img_array, axis=0).copy()
+        #         mask_array1 =
+
+        mean_r = np.mean(img_array[..., 0][img_array[..., 0] > 00.0], axis=0)
+        std_r = np.std(img_array[..., 0][img_array[..., 0] > 00.0], axis=0)
+
+        mean_g = np.mean(img_array[..., 1][img_array[..., 0] > 00.0], axis=0)
+        std_g = np.std(img_array[..., 1][img_array[..., 0] > 00.0], axis=0)
+
+        mean_b = np.mean(img_array[..., 2][img_array[..., 0] > 00.0], axis=0)
+        std_b = np.std(img_array[..., 2][img_array[..., 0] > 00.0], axis=0)
+        # print('!!!!!!!!!!!', len(mean))
+        # print('!!!!!!!!!!!', len(std))
+
+        # assert len(mean)==3 and len(std)==3
+        # img_array=(img_array-mean)/std
+        img_array[..., 0] = (img_array[..., 0] - mean_r) / std_r
+        img_array[..., 1] = (img_array[..., 1] - mean_g) / std_g
+        img_array[..., 2] = (img_array[..., 2] - mean_b) / std_b
+
+        if len(img_array.shape) == 2:
+            img_array = np.expand_dims(img_array, axis=2)
+
+        if len(mask_array1.shape) == 2:
+            mask_array1 = np.expand_dims(mask_array1, axis=2)
+
+        # if len(mask_array2.shape) == 2:
+        #     mask_array2 = np.expand_dims(mask_array2, axis=2)
+
+        if len(roi.shape) == 2:
+            roi = np.expand_dims(roi, axis=2)
+        # print(np.shape(img_array))
+
+        # image_array_img = Image.fromarray((img_array*255).astype(np.uint8))
+        # image_array_img.save('./aug_results/new/inside_img_{:02}.png'.format(k))
+        # mask_array_img_squ = np.squeeze(mask_array)
+        # mask_array_img_squ = Image.fromarray((mask_array_img_squ*255).astype(np.uint8))
+        # image_array_img.save('./aug_results/new/inside_img_{:02}.png'.format(k))
+        # mask_array_img_squ.save('./aug_results/new/inside_mask_{:02}.png'.format(k))
+        img_array = img_array.transpose((2, 0, 1))
+
+        # plt.imshow(mask_array1)
+        # plt.show()
+
+        mask_array1 = mask_array1.transpose((2, 0, 1))
+        mask_array1 = np.where(mask_array1 > 0.5, 1.0, 0.0)
+        #
+        # mask_array2 = mask_array2.transpose((2, 0, 1))
+        # mask_array2 = np.where(mask_array2 > 0.5, 1.0, 0.0)
+
+        roi = roi.transpose((2, 0, 1))
+        roi = np.where(roi > 0.5, 1.0, 0.0)
+        # print('!!!!!!!!!!!!!!', np.shape(img_array))
+        # print('!!!!!!!!!!!!!!', np.shape(mask_array1))
+        # print('!!!!!!!!!!!!!!', np.shape(mask_array2))
+
+        c, h, w = mask_array1.shape[0], mask_array1.shape[1], mask_array1.shape[2]
+
+        # (todo) two dimension (h, w)
+        # mask_array1_new = np.zeros((h, w), dtype=np.float32)
+        mask_array1_new = np.zeros((1, h, w), dtype=np.float32)
+
+        mask_array2_new = np.zeros((1, h, w), dtype=np.float32)
+
+        # for hh in range(h):
+        #     for ww in range(w):
+        #         if mask_array1[hh, ww, 0] == 0 and mask_array1[hh, ww, 1] == 0 and mask_array1[hh, ww, 2] == 0:
+        #             print('yes')
+        #         else:
+        #             print('no')
+
+        # print(np.unique(mask_array1))
+        # print(np.unique(mask_array2))
+
+        # black_id = np.where(np.logical_and(mask_array1[:, :, 0] == 0.0, mask_array1[:, :, 1] == 0.0, mask_array1[:, :, 2] == 0.0))
+        # print(len(black_id[0]))
+        #
+        # blue_id = np.where(np.logical_and(mask_array1[:, :, 0] == 0.0, mask_array1[:, :, 1] == 0.0, mask_array1[:, :, 2] == 0.0))
+        # print(len(blue_id[0]))
+
+        # transform mask array into 0, 1, 2, 3 for back ground, artery, vein and uncertain
+        black_id = np.where(np.logical_and(np.logical_and(mask_array1[0, :, :] == 0.0, mask_array1[1, :, :] == 0.0).astype('float32'), mask_array1[2, :, :] == 0.0))
+        red_id = np.where(np.logical_and(np.logical_and(mask_array1[0, :, :] == 1.0, mask_array1[1, :, :] == 0.0).astype('float32'), mask_array1[2, :, :] == 0.0))
+        blue_id = np.where(np.logical_and(np.logical_and(mask_array1[0, :, :] == 0.0, mask_array1[1, :, :] == 0.0).astype('float32'), mask_array1[2, :, :] == 1.0))
+        green_id = np.where(np.logical_and(np.logical_and(mask_array1[0, :, :] == 0.0, mask_array1[1, :, :] == 1.0).astype('float32'), mask_array1[2, :, :] == 0.0))
+        white_id = np.where(np.logical_and(np.logical_and(mask_array1[0, :, :] == 1.0, mask_array1[1, :, :] == 1.0).astype('float32'), mask_array1[2, :, :] == 1.0))
+
+        mask_array1_new[0, :, :][black_id] = 0.0
+        mask_array1_new[0, :, :][red_id] = 1.0
+        mask_array1_new[0, :, :][blue_id] = 2.0
+        mask_array1_new[0, :, :][green_id] = 3.0
+        mask_array1_new[0, :, :][white_id] = 3.0
+
+        mask_array2_new[0, :, :][black_id] = 0.0
+        mask_array2_new[0, :, :][red_id] = 1.0
+        mask_array2_new[0, :, :][blue_id] = 1.0
+        mask_array2_new[0, :, :][green_id] = 1.0
+        mask_array2_new[0, :, :][white_id] = 1.0
+
+        # black_id = np.where(mask_array1_new[:, :] == 0.0)
+        # print(len(black_id[0]))
+        #
+        # red_id = np.where(mask_array1_new[:, :] == 1.0)
+        # print(len(red_id[0]))
+        #
+        # blue_id = np.where(mask_array1_new[:, :] == 2.0)
+        # print(len(blue_id[0]))
+
+        k += 1
+
+        # print(np.unique(mask_array1_new))
+
+        # for hh in range(h):
+        #     for ww in range(w):
+        #         if mask_array1[hh, ww, 0] == 0 and mask_array1[hh, ww, 1] == 0 and mask_array1[hh, ww, 2] == 0:
+        #             print('yes')
+        #         else:
+        #             print('no')
+
+        # mask_array1_new_temp = mask_array1_new[mask_array1_new == 1]
+        # print(np.shape(mask_array1_new_temp))
+
+        # print(len(mask_array1_new == 1))
+
+        # print(np.shape(mask_array1_new))
+        # print(np.shape(mask_array2))
+        # print(np.unique(mask_array2))
+
+        return img_array, mask_array1_new, mask_array2_new, roi
+
+    def __getitem__(self, index):
+
+        # idx = self.ids[i]
+
+        # print(idx)
+        # print(self.masks_dir_main + idx + '.*')
+        # print(self.masks_dir_auxilary + idx + '.*')
+
+        # all_images = glob.glob(os.path.join(self.imgs_dir, '*.png'))
+        # all_labels = glob.glob(os.path.join(self.labels_folder, '*.png'))
+        #
+        # all_labels.sort()
+        # all_images.sort()
+
+        # mask_file = glob(self.masks_dir + idx + self.mask_suffix + '.*')
+        # mask_file_main = glob(self.masks_dir_main + idx + '.png')
+        # mask_file_auxilary = glob(self.masks_dir_auxilary + idx + '.png')
+        # logging.info(f'Creating dataset with {len(mask_file)} mask')
+
+        # img_file = glob(self.imgs_dir + idx + '.png')
+
+        # assert len(mask_file_main) == 1, \
+        #     f'Either no main mask or multiple masks found for the ID {idx}: {mask_file_main}'
+        # assert len(mask_file_auxilary) == 1, \
+        #     f'Either no auxilary mask or multiple masks found for the ID {idx}: {mask_file_auxilary}'
+        # assert len(img_file) == 1, \
+        #     f'Either no image or multiple images found for the ID {idx}: {img_file}'
+
+        # print(os.path.join(self.imgs_dir, '*.png'))
+
+        all_images = glob.glob(os.path.join(self.imgs_dir, '*.png'))
+        all_labels_main = glob.glob(os.path.join(self.masks_dir_main, '*.png'))
+        all_rois = glob.glob(os.path.join(self.roi_mask_dir, '*.gif'))
+
+        # print(len(all_images))
+        # print(len(all_labels_main))
+        # print(len(all_labels_auxilary))
+
+        all_labels_main.sort()
+        # all_labels_auxilary.sort()
+        all_images.sort()
+        all_rois.sort()
+
+        # mask_main = Image.open(mask_file_main[0])
+        # mask_auxilary = Image.open(mask_file_auxilary[0])
+        # img = Image.open(img_file[0])
+
+        mask_main = Image.open(all_labels_main[index])
+        # mask_auxilary = Image.open(all_labels_auxilary[index])
+        img = Image.open(all_images[index])
+
+        roi = Image.open(all_rois[index])
+
+        # assert img.size == mask_main.size, \
+        #     f'Image and mask {idx} should be the same size, but are {img.size} and {mask_main.size}'
+
+        # seed = np.random.randint(2147483647)
+        # random.seed(seed)
+        # torch.cuda.manual_seed(seed)
+        #
+        # if self.transform:
+        #     img = self.transform(img)
+        #
+        # # random.seed(seed)  # apply this seed to target tranfsorms
+        # # torch.cuda.manual_seed(seed)  # needed for torchvision 0.7
+        #
+        # if self.transform:
+        #     mask_main = self.transform(mask_main)
+        #     mask_auxilary = self.transform(mask_auxilary)
+        #
+        # img = self.preprocess(img, self.img_size)
+        # mask_main = self.preprocess(mask_main, self.img_size)
+        # mask_auxilary = self.preprocess(mask_auxilary, self.img_size)
+        # if self.transform:
+        img, mask_main, mask_auxilary, roi = self.preprocess(img, mask_main, roi, self.img_size, self.train_or, index)
+        # print('the range of img is: ',np.unique(img))
+        # print('the range of mask is: ',np.unique(mask))
+        '''
+        if self.transform:
+            img = self.transform(img)
+            mask = self.transform(mask)
+        '''
+        return {
+            'image': torch.from_numpy(img).type(torch.FloatTensor),
+            'mask_main': torch.from_numpy(mask_main).type(torch.FloatTensor),
+            'mask_auxilary': torch.from_numpy(mask_auxilary).type(torch.FloatTensor),
+            'roi': torch.from_numpy(roi).type(torch.FloatTensor)
+        }
+
+
+class MultiTaskDataset_LES(Dataset):
 
     def __init__(self, imgs_dir, masks_dir_main, masks_dir_auxilary, roi_mask_dir, img_size, train_or, mask_suffix=''):
 
@@ -163,11 +526,13 @@ class MultiTaskDataset(Dataset):
         mask_array1 = np.array(mask1) / 255
         mask_array2 = np.array(mask2) / 255
 
-        img_array = self.pad_imgs(img_array, img_size)
-        mask_array1 = self.pad_imgs(mask_array1, img_size)
-        mask_array2 = self.pad_imgs(mask_array2, img_size)
+        img_array, mask_array1, mask_array2, module_array = self.crop_imgs(img_array, mask_array1, mask_array2, roi, img_size)
 
-        roi = self.pad_imgs(roi, img_size)
+        # img_array = self.pad_imgs(img_array, img_size)
+        # mask_array1 = self.pad_imgs(mask_array1, img_size)
+        # mask_array2 = self.pad_imgs(mask_array2, img_size)
+
+        # roi = self.pad_imgs(roi, img_size)
 
         # print('@@@@@@@@@@@@@@', np.shape(img_array))
         # print('@@@@@@@@@@@@@@', np.shape(mask_array1))
@@ -205,7 +570,7 @@ class MultiTaskDataset(Dataset):
             # print('@@@@@@@@@@@@@@', np.shape(img_array))
             # print('@@@@@@@@@@@@@@', np.shape(mask_array))
 
-            img_array, mask_array1, mask_array2, module_array = self.crop_imgs(img_array, mask_array1, mask_array2, roi, img_size)
+            #
 
             img_array = self.random_perturbation(img_array)
             mask_array1 = np.round(rotate(mask_array1, angle, axes=(0, 1), reshape=False))
@@ -365,7 +730,7 @@ class MultiTaskDataset(Dataset):
 
         # print(os.path.join(self.imgs_dir, '*.png'))
 
-        all_images = glob.glob(os.path.join(self.imgs_dir, '*.tif'))
+        all_images = glob.glob(os.path.join(self.imgs_dir, '*.png'))
         all_labels_main = glob.glob(os.path.join(self.masks_dir_main, '*.png'))
         all_labels_auxilary = glob.glob(os.path.join(self.masks_dir_auxilary, '*.png'))
 
@@ -514,15 +879,17 @@ def getData(data_directory, dataset_name, train_batchsize, image_size, multi_tas
 
     else:
 
+        dataset_name_test = dataset_name + '_patch'
+
         train_dir = data_directory + '/' + dataset_name + '/training/images/'
         dir_mask_main = data_directory + '/' + dataset_name + '/training/1st_manual/'
         dir_mask_auxiliary = data_directory + '/' + dataset_name + '/training/2st_manual/'
 
-        test_dir_img = data_directory + '/' + dataset_name + '/test/images/'
-        test_dir_mask_main = data_directory + '/' + dataset_name + '/test/1st_manual/'
-        test_dir_mask_auxilary = data_directory + '/' + dataset_name + '/test/2nd_manual/'
+        test_dir_img = data_directory + '/' + dataset_name_test + '/test/images/'
+        test_dir_mask_main = data_directory + '/' + dataset_name_test + '/test/1st_manual/'
+        # test_dir_mask_auxilary = data_directory + '/' + dataset_name + '/test/2nd_manual/'
 
-        test_dir_roi = data_directory + '/' + dataset_name + '/test/mask/'
+        test_dir_roi = data_directory + '/' + dataset_name_test + '/test/mask/'
 
     # train_dir = "./data/DRIVE_AV/training/images/"
     # dir_mask = "./data/DRIVE_AV/training/2st_manual/"
@@ -537,6 +904,8 @@ def getData(data_directory, dataset_name, train_batchsize, image_size, multi_tas
 
     # val_percent = 0.1
 
+    # print(dir_mask_main)
+
     if multi_task is False:
 
         dataset = BasicDataset(train_dir, dir_mask, image_size)
@@ -544,8 +913,8 @@ def getData(data_directory, dataset_name, train_batchsize, image_size, multi_tas
 
     else:
 
-        dataset = MultiTaskDataset(train_dir, dir_mask_main, dir_mask_auxiliary, test_dir_roi, image_size, train_or=True)
-        test_dataset = MultiTaskDataset(test_dir_img, test_dir_mask_main, test_dir_mask_auxilary, test_dir_roi, image_size, train_or=False)
+        dataset = MultiTaskDataset_LES(train_dir, dir_mask_main, dir_mask_auxiliary, test_dir_roi, image_size, train_or=True)
+        test_dataset = MultiTaskDataset_LES_test(test_dir_img, test_dir_mask_main, test_dir_roi, image_size, train_or=False)
 
     # n_val = int(len(dataset) * val_percent)
     # n_train = len(dataset) - n_val
@@ -915,6 +1284,13 @@ def trainSingleModel(model,
     # # ===============
     # Testing:
     # =================
+
+    save_model_name_full = saved_model_path + '/' + save_model_name + '_Final.pt'
+    #
+    path_model = save_model_name_full
+    #
+    torch.save(model, path_model)
+
     save_path = saved_information_path + '/Visual_results'
 
     try:
@@ -1364,12 +1740,6 @@ def trainSingleModel(model,
     stop = timeit.default_timer()
     #
     print('Time: ', stop - start)
-    #
-    save_model_name_full = saved_model_path + '/' + save_model_name + '_Final.pt'
-    #
-    path_model = save_model_name_full
-    #
-    torch.save(model, path_model)
     #
     print('\nTraining finished and final model saved\n')
     #

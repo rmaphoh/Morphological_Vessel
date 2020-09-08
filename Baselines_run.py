@@ -5,7 +5,7 @@ import torch
 # from NNTrain_norm_ensemble import trainModels
 # from Train import trainModels
 
-from Baselines_train import trainModels
+from Baselines_train_LES import trainModels
 # torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -14,7 +14,7 @@ torch.backends.cudnn.benchmark = False
 if __name__ == '__main__':
 
     trainModels(data_directory='./data',
-                dataset_name='DRIVE_AV',
+                dataset_name='LES_AV',
                 input_dim=3,
                 class_no=4,
                 repeat=1,
@@ -29,7 +29,7 @@ if __name__ == '__main__':
                 save_interval_epoch=1)
 
     trainModels(data_directory='./data',
-                dataset_name='DRIVE_AV',
+                dataset_name='LES_AV',
                 input_dim=3,
                 class_no=4,
                 repeat=1,
@@ -44,7 +44,7 @@ if __name__ == '__main__':
                 save_interval_epoch=1)
 
     trainModels(data_directory='./data',
-                dataset_name='DRIVE_AV',
+                dataset_name='LES_AV',
                 input_dim=3,
                 class_no=4,
                 repeat=1,
